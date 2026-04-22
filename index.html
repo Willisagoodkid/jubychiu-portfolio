@@ -1,43 +1,804 @@
-
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Juby Chiu Studio</title>
+    <title>Juby chiuuuuu studio <3 .</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&family=Inter:wght@900&display=swap" rel="stylesheet">
+
+    <style>
+        body { 
+            margin: 0; 
+            padding: 0;
+            width: 100vw;
+            height: 100vh; 
+            overflow: hidden; 
+            background-color: #6c5b5e; 
+            font-family: 'Inter', 'Noto Sans TC', sans-serif; 
+        }
+        canvas { display: block; }
+        
+        #loader {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #6c5b5e; color: #ffffff; display: flex; 
+            flex-direction: column;
+            justify-content: center; align-items: center; z-index: 999;
+            transition: opacity 0.5s; 
+        }
+        #loader-text { font-size: 1.2rem; font-weight: bold; letter-spacing: 2px; margin-bottom: 15px; }
+        #progress-bar { width: 200px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; overflow: hidden; }
+        #progress-fill { width: 0%; height: 100%; background: #ffffff; transition: width 0.2s; }
+
+        #brand {
+            position: absolute; top: 30px; left: 40px; color: #ffffff;
+            font-size: 1.2rem; font-weight: bold; letter-spacing: 1px;
+            z-index: 10;
+            cursor: pointer;
+            pointer-events: auto; 
+            transition: opacity 0.3s;
+        }
+        #brand:hover { opacity: 0.7; }
+
+        #audio-toggle {
+            position: absolute;
+            top: 25px;
+            right: 40px;
+            width: 45px;
+            height: 45px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #ffffff;
+            cursor: pointer;
+            z-index: 20;
+            transition: all 0.3s ease;
+            pointer-events: auto;
+        }
+        #audio-toggle:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.05);
+        }
+        #audio-toggle svg {
+            width: 22px;
+            height: 22px;
+            fill: currentColor;
+        }
+
+        #ui-layer {
+            position: absolute; 
+            bottom: 15%; 
+            left: 8%;    
+            width: 600px; 
+            text-align: left;
+            pointer-events: none; 
+            color: #ffffff; 
+            z-index: 5;
+            transition: opacity 0.6s, transform 0.8s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        body.panel-open #ui-layer {
+            transform: translateY(-200px);
+            opacity: 0; 
+        }
+
+        #ui-title-container {
+            display: flex;
+            align-items: flex-end; 
+            margin-bottom: 10px;
+            padding-bottom: 15px; 
+        }
+
+        #ui-title { 
+            font-size: 5.5rem; 
+            font-weight: 900; 
+            margin: 0; 
+            line-height: 0.85; 
+            text-transform: uppercase; 
+            font-family: 'Inter', sans-serif; 
+            word-break: break-word; 
+        }
+
+        #ui-subtitle {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin: 0;
+            padding-left: 12px;
+            border-left: 4px solid #ffffff; 
+            line-height: 1.2;
+            word-break: break-word;
+        }
+
+        #glass-panel {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 85vh; 
+            background: rgba(255, 255, 255, 0.01); 
+            backdrop-filter: blur(3px); 
+            -webkit-backdrop-filter: blur(3px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.02); 
+            border-radius: 30px 30px 0 0; 
+            transform: translateY(100%); 
+            transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); 
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-sizing: border-box;
+            cursor: pointer; 
+        }
+
+        #glass-panel.half-open { transform: translateY(60%); }
+        #glass-panel.full-open { 
+            transform: translateY(0%);
+            background: rgba(255, 255, 255, 0.2); 
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            cursor: default; 
+        }
+
+        .panel-handle {
+            width: 60px;
+            height: 5px;
+            background: rgba(255,255,255,0.4); 
+            border-radius: 5px;
+            margin-top: 15px;
+            margin-bottom: 30px;
+            flex-shrink: 0;
+            cursor: pointer; 
+        }
+
+        .panel-content {
+            width: 100%; 
+            max-width: 100%; 
+            padding: 0 40px; 
+            box-sizing: border-box;
+            display: flex;
+            gap: 50px;
+            opacity: 0;
+            transition: opacity 0.8s; 
+            height: 100%;
+            padding-bottom: 50px;
+        }
+
+        #glass-panel.half-open .panel-content,
+        #glass-panel.full-open .panel-content { opacity: 1; }
+
+        .panel-left { 
+            flex: 1; 
+            padding-top: 200px; 
+        }
+        .panel-title-text { 
+            font-size: 3.5rem; 
+            font-weight: 900; 
+            color: #ffffff; 
+            line-height: 1.1; 
+            word-break: break-word; 
+        }
+
+        .panel-right { 
+            flex: 3; 
+            overflow-y: auto; 
+            padding-right: 25px; 
+            padding-bottom: 100px; 
+        }
+
+        .panel-right::-webkit-scrollbar { width: 4px; }
+        .panel-right::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.4); border-radius: 4px; }
+        .panel-right::-webkit-scrollbar-track { background: transparent; }
+
+        .detail-text { width: 100%; }
+        .detail-text img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px; 
+            margin-bottom: 25px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08); 
+            display: block;
+        }
+        .detail-text h2 {
+            font-size: 2rem;
+            font-weight: 900;
+            margin: 0 0 15px 0;
+            color: #ffffff;
+        }
+        .detail-text p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #eeeeee;
+            margin-bottom: 25px;
+        }
+
+    </style>
+    
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
 </head>
 <body>
-    <header>
-        <h1>JUBY CHIU STUDIO</h1>
-        <p>服裝設計・造型設計・形象美學</p>
-        <nav>
-            <a href="#portfolio">作品集</a> |
-            <a href="#about">關於我</a> |
-            <a href="#contact">聯絡方式</a>
-        </nav>
-    </header>
 
-    <main>
-        <section id="portfolio">
-            <h2>精選作品</h2>
-            <p>這裡會放置您的時尚設計作品、造型攝影或其他創意展示。</p>
-            <img src="https://source.unsplash.com/800x800/?fashion,style" alt="作品圖片">
-        </section>
+    <audio id="bg-music" loop>
+        <source src="music.mp3" type="audio/mpeg">
+    </audio>
 
-        <section id="about">
-            <h2>關於 Juby Chiu</h2>
-            <p>Juby Chiu Studio 是一個專注於服裝設計與造型美學的創意工作室。我們致力於打造能夠呈現個人風格與視覺態度的作品，協助每一位客戶找出屬於自己的形象語言。</p>
-        </section>
+    <div id="loader">
+        <div id="loader-text">INITIALIZING...</div>
+        <div id="progress-bar"><div id="progress-fill"></div></div>
+    </div>
+    
+    <div id="brand">Juby chiuuuuu studio &lt;3 .</div>
 
-        <section id="contact">
-            <h2>聯絡方式</h2>
-            <p>歡迎透過 Instagram 或電子郵件與我聯繫。</p>
-            <a href="https://www.instagram.com/jubychiustudio/" target="_blank">@jubychiustudio</a>
-        </section>
-    </main>
+    <div id="audio-toggle">
+        <svg id="icon-sound-off" viewBox="0 0 24 24">
+            <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+        </svg>
+        <svg id="icon-sound-on" viewBox="0 0 24 24" style="display:none;">
+            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+        </svg>
+    </div>
 
-    <footer>
-        <p>&copy; 2025 Juby Chiu Studio. All rights reserved.</p>
-    </footer>
+    <div id="ui-layer">
+        <div id="ui-title-container">
+            <h1 id="ui-title"></h1>
+        </div>
+        <div id="ui-subtitle"></div>
+    </div>
+
+    <div id="glass-panel">
+        <div class="panel-handle"></div>
+        <div class="panel-content">
+            <div class="panel-left">
+                <div class="panel-title-text" id="detail-panel-title"></div>
+            </div>
+            <div class="panel-right">
+                <div class="detail-text" id="detail-desc"></div>
+            </div>
+        </div>
+    </div>
+
+<script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+    const RADIUS = 20;            
+    const MODEL_FIXED_Y = 1.3;      
+    const CARD_COUNT = 25;        
+    const API_URL = "";           
+    const SPACE_COLOR = '#6c5b5e';
+
+    let scene, camera, renderer;
+    let carouselGroup;     
+    let centerModelGroup;  
+    let cardMeshes = [];   
+    let projects = [];     
+    
+    let targetRotation = 0;
+    let currentRotation = 0;
+    let currentActiveIndex = -1; 
+    let activeCardUUID = null;   
+    let previewIndex = 0; 
+
+    let centerModelTargetScale = 2.0;
+
+    const CAMERA_BASE_Y = 22;
+    const CAMERA_BASE_Z = 75;
+
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    const manager = new THREE.LoadingManager();
+
+    let lights = [];
+    let studioEnvMap;
+
+    init();
+
+    async function init() {
+        await fetchData();
+
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(SPACE_COLOR);
+        scene.fog = new THREE.Fog(SPACE_COLOR, 40, 140); 
+
+        camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 300);
+        camera.position.set(0, CAMERA_BASE_Y, CAMERA_BASE_Z); 
+        camera.lookAt(0, 0, 0);
+        
+        camera.layers.enable(0);
+        camera.layers.enable(1);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.VSMShadowMap; 
+        document.body.appendChild(renderer.domElement);
+
+        const pmremGenerator = new THREE.PMREMGenerator(renderer);
+        studioEnvMap = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+
+        setupLightsAndFloor();
+
+        if (projects.length > 0) {
+            await preloadAllModels();
+            switchPreviewModel(0); 
+        }
+
+        createCarousel();
+
+        window.addEventListener('resize', onWindowResize);
+        window.addEventListener('wheel', onWheel);
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('click', onClick);
+
+        document.getElementById('brand').addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (currentActiveIndex !== -1) {
+                exitDetailMode();
+            }
+        });
+
+        const audioBtn = document.getElementById('audio-toggle');
+        const bgMusic = document.getElementById('bg-music');
+        const iconOn = document.getElementById('icon-sound-on');
+        const iconOff = document.getElementById('icon-sound-off');
+        let isPlaying = false;
+
+        audioBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); 
+            if (isPlaying) {
+                bgMusic.pause();
+                iconOn.style.display = 'none';
+                iconOff.style.display = 'block';
+            } else {
+                bgMusic.play();
+                iconOn.style.display = 'block';
+                iconOff.style.display = 'none';
+            }
+            isPlaying = !isPlaying;
+        });
+
+        const glassPanel = document.getElementById('glass-panel');
+        glassPanel.addEventListener('click', (e) => {
+            e.stopPropagation(); 
+            if (glassPanel.classList.contains('half-open')) {
+                glassPanel.classList.remove('half-open');
+                glassPanel.classList.add('full-open');
+            }
+        });
+
+        document.querySelector('.panel-handle').addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (glassPanel.classList.contains('full-open')) {
+                glassPanel.classList.remove('full-open');
+                glassPanel.classList.add('half-open');
+            } else {
+                glassPanel.classList.remove('half-open');
+                glassPanel.classList.add('full-open');
+            }
+        });
+
+        const loaderDiv = document.getElementById('loader');
+        loaderDiv.style.opacity = 0;
+        setTimeout(() => loaderDiv.remove(), 500);
+
+        animate();
+    }
+
+    function setupLightsAndFloor() {
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
+        ambientLight.layers.set(0);
+        scene.add(ambientLight);
+
+        const studioAmbient = new THREE.AmbientLight(0xffffff, 2.0);
+        studioAmbient.layers.set(1);
+        scene.add(studioAmbient);
+
+        const topLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        topLight.position.set(0, 40, 0);
+        topLight.castShadow = true;
+        topLight.shadow.mapSize.width = 512;
+        topLight.shadow.mapSize.height = 512;
+        topLight.shadow.bias = -0.0001;
+        topLight.shadow.radius = 10;
+        topLight.shadow.blurSamples = 10;
+        topLight.layers.enable(0);
+        topLight.layers.enable(1);
+        scene.add(topLight);
+
+        const colors = [0xffd54f, 0xc084fc, 0xff8a65, 0xf472b6]; 
+        const intensities = [2500, 2500, 1800, 1800]; 
+        
+        for(let i = 0; i < 4; i++) {
+            const light = new THREE.PointLight(colors[i], intensities[i], 200);
+            light.layers.set(0); 
+            scene.add(light);
+            lights.push(light);
+        }
+
+        const floorGeo = new THREE.PlaneGeometry(1000, 1000); 
+        const floorMat = new THREE.MeshStandardMaterial({ 
+            color: new THREE.Color(SPACE_COLOR), 
+            roughness: 1.0,  
+            metalness: 0.0
+        });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2; 
+        floor.position.y = -4.0; 
+        floor.receiveShadow = true; 
+        floor.layers.set(0); 
+        scene.add(floor);
+
+        centerModelGroup = new THREE.Group();
+        scene.add(centerModelGroup);
+    }
+
+    async function fetchData() {
+        const status = document.getElementById('loader-text');
+        status.innerText = "FETCHING DATA...";
+        try {
+            const nocache = new Date().getTime();
+            
+            // ✨✨✨ 關鍵修改：捨棄 Python API，直接寫死你有的資料夾 ✨✨✨
+            // 如果你的模型是 a.glb, b.glb, c.glb, d.glb, e.glb 這裡就寫成這樣
+            const items = ['a', 'b', 'c', 'd', 'e']; 
+
+            projects = await Promise.all(items.map(async (name, index) => {
+                let desc = "";
+                let customTitle = name.toUpperCase(); 
+                
+                // 自訂大標題
+                if (name === 'a') {
+                    customTitle = "JUBY 2014"; 
+                }
+
+                try {
+                    const r = await fetch(`${API_URL}/txts/${name}.txt?t=${nocache}`);
+                    if(r.ok) desc = await r.text();
+                } catch(e){}
+
+                return {
+                    id: index,
+                    letter: name.toUpperCase(), 
+                    title: customTitle, 
+                    image: `${API_URL}/images/${name}.png?t=${nocache}`, 
+                    model: `${API_URL}/models/${name}.glb`,
+                    desc: desc,
+                    sceneObject: null,
+                    normalizedScale: 1 
+                };
+            }));
+        } catch (e) { console.error(e); }
+    }
+
+    async function preloadAllModels() {
+        const loader = new GLTFLoader(manager);
+        const dracoLoader = new DRACOLoader();
+        dracoLoader.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
+        loader.setDRACOLoader(dracoLoader);
+
+        const total = projects.length;
+        let loaded = 0;
+        document.getElementById('loader-text').innerText = "LOADING MODELS...";
+
+        const promises = projects.map((project) => {
+            return new Promise((resolve) => {
+                loader.load(project.model, (gltf) => {
+                    const model = gltf.scene;
+                    
+                    model.traverse((node) => { 
+                        if (node.isMesh) { 
+                            node.castShadow = true; 
+                            node.receiveShadow = true; 
+                            node.layers.set(1); 
+
+                            if (node.material) {
+                                node.material.envMap = studioEnvMap;
+                                node.material.envMapIntensity = 1.0;
+                                node.material.needsUpdate = true;
+                            }
+                        }
+                    });
+                    
+                    const box = new THREE.Box3().setFromObject(model);
+                    const center = new THREE.Vector3();
+                    box.getCenter(center);
+                    model.position.sub(center); 
+
+                    const size = new THREE.Vector3();
+                    box.getSize(size);
+                    const maxDim = Math.max(size.x, size.y, size.z);
+                    project.normalizedScale = 4.0 / maxDim;
+
+                    model.visible = false; 
+                    centerModelGroup.add(model);
+                    project.sceneObject = model;
+
+                    loaded++;
+                    document.getElementById('progress-fill').style.width = Math.round((loaded / total) * 100) + "%";
+                    resolve();
+                }, undefined, () => resolve());
+            });
+        });
+
+        await Promise.all(promises);
+        renderer.compile(scene, camera);
+    }
+
+    function createCarousel() {
+        carouselGroup = new THREE.Group();
+        scene.add(carouselGroup);
+        if (projects.length === 0) return;
+        const loader = new THREE.TextureLoader();
+
+        for (let i = 0; i < CARD_COUNT; i++) {
+            const dataIndex = i % projects.length;
+            const project = projects[dataIndex];
+            const angle = (i / CARD_COUNT) * Math.PI * 2;
+            
+            const x = Math.sin(angle) * RADIUS;
+            const z = Math.cos(angle) * RADIUS;
+
+            const geometry = new THREE.PlaneGeometry(3.6, 2.4); 
+            
+            const material = new THREE.MeshStandardMaterial({ 
+                color: 0x999999, 
+                side: THREE.DoubleSide, 
+                transparent: true,     
+                opacity: 0.7,          
+                roughness: 0.4,        
+                metalness: 0.2
+            });
+
+            loader.load(
+                project.image, 
+                (texture) => {
+                    texture.colorSpace = THREE.SRGBColorSpace;
+                    material.map = texture;
+                    material.color.setHex(0xffffff); 
+                    material.needsUpdate = true;
+                },
+                undefined,
+                (err) => {}
+            );
+
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(x, 0, z);
+            mesh.lookAt(0, 0, 0);
+            mesh.rotateY(Math.PI / 2); 
+            mesh.layers.set(0); 
+
+            mesh.userData = { 
+                id: i, 
+                project: project, 
+                dataIndex: dataIndex, 
+                originalAngle: angle,
+                targetLocalY: 0,  
+                currentLocalY: 0, 
+                targetOpacity: 0.7, 
+                baseOpacity: 0.7    
+            };
+            carouselGroup.add(mesh);
+            cardMeshes.push(mesh);
+        }
+    }
+
+    function switchPreviewModel(dataIndex) {
+        previewIndex = dataIndex;
+        updateUIText(dataIndex);
+        
+        projects.forEach((p, idx) => {
+            if (p.sceneObject) {
+                p.sceneObject.visible = (idx === dataIndex);
+                if (idx === dataIndex) {
+                    p.sceneObject.rotation.y = 0;
+                    p.sceneObject.position.y = MODEL_FIXED_Y;
+                    if (currentActiveIndex === -1) {
+                        centerModelTargetScale = p.normalizedScale * 2.0;
+                    }
+                }
+            }
+        });
+    }
+
+    function updateUIText(dataIndex) {
+        const p = projects[dataIndex];
+        if(!p) return;
+        document.getElementById('ui-title').innerText = p.letter || "";
+        document.getElementById('ui-subtitle').innerText = p.title || ""; 
+    }
+
+    function enterDetailMode(cardMesh) {
+        const dataIndex = cardMesh.userData.dataIndex;
+        currentActiveIndex = dataIndex;
+        switchPreviewModel(dataIndex);
+        
+        const p = projects[dataIndex];
+        
+        document.getElementById('detail-panel-title').innerText = p.title;
+        document.getElementById('detail-desc').innerHTML = p.desc;
+        
+        const panel = document.getElementById('glass-panel');
+        panel.classList.remove('full-open');
+        panel.classList.add('half-open');
+        document.body.classList.add('panel-open');
+
+        centerModelTargetScale = p.normalizedScale * 2.5; 
+        
+        activeCardUUID = cardMesh.uuid;
+        cardMesh.userData.targetLocalY = 50; 
+        cardMesh.userData.targetOpacity = 0; 
+    }
+
+    function exitDetailMode() {
+        currentActiveIndex = -1;
+        document.getElementById('glass-panel').classList.remove('half-open', 'full-open');
+        document.body.classList.remove('panel-open');
+        
+        const p = projects[previewIndex];
+        if(p) centerModelTargetScale = p.normalizedScale * 2.0; 
+        
+        if (activeCardUUID) {
+            const mesh = cardMeshes.find(m => m.uuid === activeCardUUID);
+            if (mesh) {
+                mesh.userData.targetLocalY = 0; 
+                mesh.userData.targetOpacity = mesh.userData.baseOpacity;
+            }
+        }
+        activeCardUUID = null;
+        
+        setTimeout(() => {
+            if(currentActiveIndex === -1) {
+                document.getElementById('detail-desc').innerHTML = '';
+            }
+        }, 500);
+    }
+
+    function onClick(event) {
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(cardMeshes);
+
+        if (intersects.length > 0) {
+            const hit = intersects[0].object;
+            const dataIndex = hit.userData.dataIndex;
+            
+            if (currentActiveIndex === dataIndex) return;
+
+            enterDetailMode(hit);
+            
+            let targetAngle = -hit.userData.originalAngle;
+            const currentRot = currentRotation;
+            const twoPi = Math.PI * 2;
+            const cycles = Math.floor(currentRot / twoPi);
+            targetAngle += cycles * twoPi;
+            const diff = targetAngle - currentRot;
+            if (diff > Math.PI) targetAngle -= twoPi;
+            else if (diff < -Math.PI) targetAngle += twoPi;
+            targetRotation = targetAngle;
+
+        } else {
+            exitDetailMode();
+        }
+    }
+
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function onWheel(event) {
+        targetRotation += event.deltaY * 0.0008;
+    }
+
+    function onMouseMove(event) {
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        
+        const targetCamX = -mouse.x * 4; 
+        const targetCamY = mouse.y * 4 + CAMERA_BASE_Y;
+        
+        camera.position.x += (targetCamX - camera.position.x) * 0.05;
+        camera.position.y += (targetCamY - camera.position.y) * 0.05;
+        camera.lookAt(0, 0, 0);
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+
+        const time = Date.now() * 0.0002; 
+        if (lights.length === 4) {
+            lights[0].position.x = Math.sin(time) * 25;
+            lights[0].position.z = Math.cos(time) * 25;
+            lights[0].position.y = 8 + Math.sin(time * 1.5) * 3;
+
+            lights[1].position.x = Math.sin(time + Math.PI) * 25;
+            lights[1].position.z = Math.cos(time + Math.PI) * 25;
+            lights[1].position.y = 8 - Math.sin(time * 1.5) * 3;
+
+            lights[2].position.x = Math.cos(time * 1.2) * 15;
+            lights[2].position.z = Math.sin(time * 1.2) * 15;
+            lights[2].position.y = 12 + Math.cos(time * 2) * 2;
+
+            lights[3].position.x = Math.cos(time * 1.2 + Math.PI) * 15;
+            lights[3].position.z = Math.sin(time * 1.2 + Math.PI) * 15;
+            lights[3].position.y = 12 - Math.cos(time * 2) * 2;
+        }
+
+        currentRotation += (targetRotation - currentRotation) * 0.06;
+        if (carouselGroup) {
+            carouselGroup.rotation.y = currentRotation;
+        }
+
+        cardMeshes.forEach(mesh => {
+            const target = mesh.userData.targetLocalY;
+            mesh.userData.currentLocalY += (target - mesh.userData.currentLocalY) * 0.05;
+            mesh.position.y = mesh.userData.currentLocalY;
+            
+            if (mesh.material) {
+                const currentOp = mesh.material.opacity;
+                const targetOp = mesh.userData.targetOpacity;
+                mesh.material.opacity += (targetOp - currentOp) * 0.05;
+            }
+        });
+
+        if (currentActiveIndex === -1) {
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(cardMeshes);
+            
+            cardMeshes.forEach(mesh => {
+                if (mesh.uuid !== activeCardUUID) {
+                    mesh.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
+                    mesh.userData.targetOpacity = mesh.userData.baseOpacity; 
+                }
+            });
+            document.body.style.cursor = 'default';
+
+            if (intersects.length > 0) {
+                const hit = intersects[0].object;
+                const targetIdx = hit.userData.dataIndex;
+                document.body.style.cursor = 'pointer';
+                hit.scale.lerp(new THREE.Vector3(1.3, 1.3, 1.3), 0.15);
+                
+                if (hit.uuid !== activeCardUUID) {
+                    hit.userData.targetOpacity = 1.0;
+                }
+                
+                if (previewIndex !== targetIdx) {
+                    switchPreviewModel(targetIdx);
+                }
+            }
+        }
+
+        projects.forEach(p => {
+            if (p.sceneObject && p.sceneObject.visible) {
+                p.sceneObject.rotation.y += 0.005;
+                p.sceneObject.position.y = MODEL_FIXED_Y; 
+
+                const currentS = p.sceneObject.scale.x;
+                const nextS = currentS + (centerModelTargetScale - currentS) * 0.05;
+                p.sceneObject.scale.set(nextS, nextS, nextS);
+            }
+        });
+
+        renderer.render(scene, camera);
+    }
+</script>
 </body>
 </html>
