@@ -221,6 +221,8 @@
 
     </style>
     
+    <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+
     <script type="importmap">
         {
             "imports": {
@@ -280,7 +282,6 @@
     const RADIUS = 20;            
     const MODEL_FIXED_Y = 1.3;      
     const CARD_COUNT = 25;        
-    const API_URL = ".";           
     const SPACE_COLOR = '#6c5b5e';
 
     let scene, camera, renderer;
@@ -309,48 +310,45 @@
 
     init();
 
-async function fetchData() {
-        const status = document.getElementById('loader-text');
-        status.innerText = "FETCHING DATA...";
-        try {
-            const nocache = new Date().getTime();
-            
-            const items = ['a', 'b', 'c', 'd']; 
+    async function init() {
+        await fetchData();
 
-            projects = await Promise.all(items.map(async (name, index) => {
-                let desc = "";
-                let customTitle = name.toUpperCase(); 
-                if (name === 'a') {
-                    customTitle = "JUBY 2014"; 
-                }
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(SPACE_COLOR);
+        scene.fog = new THREE.Fog(SPACE_COLOR, 40, 140); 
 
-                try {
-                    // ✨ 拿掉前面的 API_URL 和斜線，直接寫 txts/...
-                    const r = await fetch(`txts/${name}.txt?t=${nocache}`);
-                    if(r.ok) desc = await r.text();
-                } catch(e){}
+        camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 300);
+        camera.position.set(0, CAMERA_BASE_Y, CAMERA_BASE_Z); 
+        camera.lookAt(0, 0, 0);
+        
+        camera.layers.enable(0);
+        camera.layers.enable(1);
 
-                return {
-                    id: index,
-                    letter: name.toUpperCase(), 
-                    title: customTitle, 
-                    // ✨ 拿掉前面的 API_URL 和斜線，直接寫 images/... 和 models/...
-                    image: `images/${name}.png?t=${nocache}`, 
-                    model: `models/${name}.glb`,
-                    desc: desc,
-                    sceneObject: null,
-                    normalizedScale: 1 
-                };
-            }));
-        } catch (e) { console.error(e); }
-    }
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.VSMShadowMap; 
+        document.body.appendChild(renderer.domElement);
+
+        const pmremGenerator = new THREE.PMREMGenerator(renderer);
+        studioEnvMap = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+
+        setupLightsAndFloor();
+
+        if (projects.length > 0) {
+            await preloadAllModels();
+            switchPreviewModel(0); 
+        }
 
         createCarousel();
 
         window.addEventListener('resize', onWindowResize);
+        
+        // ✨ 加入滑鼠與手機觸控的支援
         window.addEventListener('wheel', onWheel);
         window.addEventListener('mousemove', onMouseMove);
-        window.addEventListener('click', onClick);
+        window.addEventListener('touchmove', onTouchMove, { passive: false });
 
         document.getElementById('brand').addEventListener('click', (e) => {
             e.stopPropagation();
@@ -460,21 +458,17 @@ async function fetchData() {
         try {
             const nocache = new Date().getTime();
             
-            // ✨✨✨ 關鍵修改：捨棄 Python API，直接寫死你有的資料夾 ✨✨✨
-            // 如果你的模型是 a.glb, b.glb, c.glb, d.glb, e.glb 這裡就寫成這樣
-            const items = ['a', 'b', 'c', 'd', 'e']; 
+            // ✨ 如果你還有其他檔案，加在這裡
+            const items = ['a', 'b', 'c', 'd']; 
 
             projects = await Promise.all(items.map(async (name, index) => {
                 let desc = "";
                 let customTitle = name.toUpperCase(); 
-                
-                // 自訂大標題
-                if (name === 'a') {
-                    customTitle = "JUBY 2014"; 
-                }
+                if (name === 'a') { customTitle = "JUBY 2014"; }
 
                 try {
-                    const r = await fetch(`${API_URL}/txts/${name}.txt?t=${nocache}`);
+                    // ✨ 徹底移除所有絕對路徑斜線，保證 GitHub Pages 讀得到
+                    const r = await fetch(`txts/${name}.txt?t=${nocache}`);
                     if(r.ok) desc = await r.text();
                 } catch(e){}
 
@@ -482,8 +476,8 @@ async function fetchData() {
                     id: index,
                     letter: name.toUpperCase(), 
                     title: customTitle, 
-                    image: `${API_URL}/images/${name}.png?t=${nocache}`, 
-                    model: `${API_URL}/models/${name}.glb`,
+                    image: `images/${name}.png?t=${nocache}`, 
+                    model: `models/${name}.glb`,
                     desc: desc,
                     sceneObject: null,
                     normalizedScale: 1 
@@ -674,136 +668,3 @@ async function fetchData() {
             }
         }, 500);
     }
-
-    function onClick(event) {
-        raycaster.setFromCamera(mouse, camera);
-        const intersects = raycaster.intersectObjects(cardMeshes);
-
-        if (intersects.length > 0) {
-            const hit = intersects[0].object;
-            const dataIndex = hit.userData.dataIndex;
-            
-            if (currentActiveIndex === dataIndex) return;
-
-            enterDetailMode(hit);
-            
-            let targetAngle = -hit.userData.originalAngle;
-            const currentRot = currentRotation;
-            const twoPi = Math.PI * 2;
-            const cycles = Math.floor(currentRot / twoPi);
-            targetAngle += cycles * twoPi;
-            const diff = targetAngle - currentRot;
-            if (diff > Math.PI) targetAngle -= twoPi;
-            else if (diff < -Math.PI) targetAngle += twoPi;
-            targetRotation = targetAngle;
-
-        } else {
-            exitDetailMode();
-        }
-    }
-
-    function onWindowResize() {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    }
-
-    function onWheel(event) {
-        targetRotation += event.deltaY * 0.0008;
-    }
-
-    function onMouseMove(event) {
-        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-        
-        const targetCamX = -mouse.x * 4; 
-        const targetCamY = mouse.y * 4 + CAMERA_BASE_Y;
-        
-        camera.position.x += (targetCamX - camera.position.x) * 0.05;
-        camera.position.y += (targetCamY - camera.position.y) * 0.05;
-        camera.lookAt(0, 0, 0);
-    }
-
-    function animate() {
-        requestAnimationFrame(animate);
-
-        const time = Date.now() * 0.0002; 
-        if (lights.length === 4) {
-            lights[0].position.x = Math.sin(time) * 25;
-            lights[0].position.z = Math.cos(time) * 25;
-            lights[0].position.y = 8 + Math.sin(time * 1.5) * 3;
-
-            lights[1].position.x = Math.sin(time + Math.PI) * 25;
-            lights[1].position.z = Math.cos(time + Math.PI) * 25;
-            lights[1].position.y = 8 - Math.sin(time * 1.5) * 3;
-
-            lights[2].position.x = Math.cos(time * 1.2) * 15;
-            lights[2].position.z = Math.sin(time * 1.2) * 15;
-            lights[2].position.y = 12 + Math.cos(time * 2) * 2;
-
-            lights[3].position.x = Math.cos(time * 1.2 + Math.PI) * 15;
-            lights[3].position.z = Math.sin(time * 1.2 + Math.PI) * 15;
-            lights[3].position.y = 12 - Math.cos(time * 2) * 2;
-        }
-
-        currentRotation += (targetRotation - currentRotation) * 0.06;
-        if (carouselGroup) {
-            carouselGroup.rotation.y = currentRotation;
-        }
-
-        cardMeshes.forEach(mesh => {
-            const target = mesh.userData.targetLocalY;
-            mesh.userData.currentLocalY += (target - mesh.userData.currentLocalY) * 0.05;
-            mesh.position.y = mesh.userData.currentLocalY;
-            
-            if (mesh.material) {
-                const currentOp = mesh.material.opacity;
-                const targetOp = mesh.userData.targetOpacity;
-                mesh.material.opacity += (targetOp - currentOp) * 0.05;
-            }
-        });
-
-        if (currentActiveIndex === -1) {
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(cardMeshes);
-            
-            cardMeshes.forEach(mesh => {
-                if (mesh.uuid !== activeCardUUID) {
-                    mesh.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
-                    mesh.userData.targetOpacity = mesh.userData.baseOpacity; 
-                }
-            });
-            document.body.style.cursor = 'default';
-
-            if (intersects.length > 0) {
-                const hit = intersects[0].object;
-                const targetIdx = hit.userData.dataIndex;
-                document.body.style.cursor = 'pointer';
-                hit.scale.lerp(new THREE.Vector3(1.3, 1.3, 1.3), 0.15);
-                
-                if (hit.uuid !== activeCardUUID) {
-                    hit.userData.targetOpacity = 1.0;
-                }
-                
-                if (previewIndex !== targetIdx) {
-                    switchPreviewModel(targetIdx);
-                }
-            }
-        }
-
-        projects.forEach(p => {
-            if (p.sceneObject && p.sceneObject.visible) {
-                p.sceneObject.rotation.y += 0.005;
-                p.sceneObject.position.y = MODEL_FIXED_Y; 
-
-                const currentS = p.sceneObject.scale.x;
-                const nextS = currentS + (centerModelTargetScale - currentS) * 0.05;
-                p.sceneObject.scale.set(nextS, nextS, nextS);
-            }
-        });
-
-        renderer.render(scene, camera);
-    }
-</script>
-</body>
-</html>
