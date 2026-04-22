@@ -2,227 +2,96 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Juby chiuuuuu studio <3 .</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Juby Studio Mobile Optimized</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&family=Inter:wght@900&display=swap" rel="stylesheet">
 
     <style>
-        body { 
-            margin: 0; 
-            padding: 0;
-            width: 100vw;
-            height: 100vh; 
-            overflow: hidden; 
-            background-color: #6c5b5e; 
-            font-family: 'Inter', 'Noto Sans TC', sans-serif; 
-        }
+        body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background-color: #6c5b5e; font-family: 'Inter', 'Noto Sans TC', sans-serif; touch-action: none; }
         canvas { display: block; }
         
-        #loader {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #6c5b5e; color: #ffffff; display: flex; 
-            flex-direction: column;
-            justify-content: center; align-items: center; z-index: 999;
-            transition: opacity 0.5s; 
-        }
+        #loader { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #6c5b5e; color: #ffffff; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 999; transition: opacity 0.5s; }
         #loader-text { font-size: 1.2rem; font-weight: bold; letter-spacing: 2px; margin-bottom: 15px; }
         #progress-bar { width: 200px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; overflow: hidden; }
         #progress-fill { width: 0%; height: 100%; background: #ffffff; transition: width 0.2s; }
 
+        /* ✨ 標題固定左上角 */
         #brand {
-            position: absolute; top: 30px; left: 40px; color: #ffffff;
-            font-size: 1.2rem; font-weight: bold; letter-spacing: 1px;
-            z-index: 10;
-            cursor: pointer;
-            pointer-events: auto; 
-            transition: opacity 0.3s;
+            position: absolute; top: 25px; left: 25px; color: #ffffff;
+            font-size: 1rem; font-weight: bold; letter-spacing: 1px;
+            z-index: 10; cursor: pointer; transition: opacity 0.3s;
         }
-        #brand:hover { opacity: 0.7; }
 
+        /* ✨ 音樂按鈕固定右上角 */
         #audio-toggle {
-            position: absolute;
-            top: 25px;
-            right: 40px;
-            width: 45px;
-            height: 45px;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: #ffffff;
-            cursor: pointer;
-            z-index: 20;
-            transition: all 0.3s ease;
-            pointer-events: auto;
+            position: absolute; top: 20px; right: 25px;
+            width: 40px; height: 40px;
+            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            color: #ffffff; cursor: pointer; z-index: 20;
         }
-        #audio-toggle:hover {
-            background: rgba(255, 255, 255, 0.25);
-            transform: scale(1.05);
-        }
-        #audio-toggle svg {
-            width: 22px;
-            height: 22px;
-            fill: currentColor;
-        }
+        #audio-toggle svg { width: 20px; height: 20px; fill: currentColor; }
 
+        /* ✨ 首頁大字母 UI */
         #ui-layer {
-            position: absolute; 
-            bottom: 15%; 
-            left: 8%;    
-            width: 600px; 
-            text-align: left;
-            pointer-events: none; 
-            color: #ffffff; 
-            z-index: 5;
+            position: absolute; bottom: 15%; left: 25px;
+            text-align: left; pointer-events: none; color: #ffffff; z-index: 5;
             transition: opacity 0.6s, transform 0.8s cubic-bezier(0.19, 1, 0.22, 1);
         }
+        body.panel-open #ui-layer { transform: translateY(-100px); opacity: 0; }
+        #ui-title { font-size: 4.5rem; font-weight: 900; margin: 0; line-height: 0.85; text-transform: uppercase; }
+        #ui-subtitle { font-size: 1rem; font-weight: 700; margin: 5px 0 0 0; padding-left: 10px; border-left: 3px solid #ffffff; }
 
-        body.panel-open #ui-layer {
-            transform: translateY(-200px);
-            opacity: 0; 
-        }
-
-        #ui-title-container {
-            display: flex;
-            align-items: flex-end; 
-            margin-bottom: 10px;
-            padding-bottom: 15px; 
-        }
-
-        #ui-title { 
-            font-size: 5.5rem; 
-            font-weight: 900; 
-            margin: 0; 
-            line-height: 0.85; 
-            text-transform: uppercase; 
-            font-family: 'Inter', sans-serif; 
-            word-break: break-word; 
-        }
-
-        #ui-subtitle {
-            font-size: 1.2rem;
-            font-weight: 700;
-            margin: 0;
-            padding-left: 12px;
-            border-left: 4px solid #ffffff; 
-            line-height: 1.2;
-            word-break: break-word;
-        }
-
+        /* ✨ 彈起式面板優化 */
         #glass-panel {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 85vh; 
-            background: rgba(255, 255, 255, 0.01); 
-            backdrop-filter: blur(3px); 
-            -webkit-backdrop-filter: blur(3px);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.02); 
-            border-radius: 30px 30px 0 0; 
-            transform: translateY(100%); 
-            transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); 
-            z-index: 20;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            box-sizing: border-box;
-            cursor: pointer; 
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 90vh; 
+            background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1); border-radius: 30px 30px 0 0; 
+            transform: translateY(100%); transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); 
+            z-index: 100; display: flex; flex-direction: column; align-items: center;
         }
+        #glass-panel.full-open { transform: translateY(0%); background: rgba(255, 255, 255, 0.15); }
 
-        #glass-panel.half-open { transform: translateY(60%); }
-        #glass-panel.full-open { 
-            transform: translateY(0%);
-            background: rgba(255, 255, 255, 0.2); 
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            cursor: default; 
-        }
-
-        .panel-handle {
-            width: 60px;
-            height: 5px;
-            background: rgba(255,255,255,0.4); 
-            border-radius: 5px;
-            margin-top: 15px;
-            margin-bottom: 30px;
-            flex-shrink: 0;
-            cursor: pointer; 
-        }
+        .panel-handle { width: 50px; height: 5px; background: rgba(255,255,255,0.3); border-radius: 5px; margin: 15px 0 20px 0; flex-shrink: 0; }
 
         .panel-content {
-            width: 100%; 
-            max-width: 100%; 
-            padding: 0 40px; 
-            box-sizing: border-box;
-            display: flex;
-            gap: 50px;
-            opacity: 0;
-            transition: opacity 0.8s; 
-            height: 100%;
-            padding-bottom: 50px;
+            width: 100%; padding: 0 25px; box-sizing: border-box;
+            display: flex; flex-direction: column; /* 手機版改為上下排列 */
+            gap: 20px; opacity: 0; transition: opacity 0.5s; height: 100%; overflow-y: auto;
         }
-
-        #glass-panel.half-open .panel-content,
         #glass-panel.full-open .panel-content { opacity: 1; }
 
-        .panel-left { 
-            flex: 1; 
-            padding-top: 200px; 
-        }
-        .panel-title-text { 
-            font-size: 3.5rem; 
-            font-weight: 900; 
-            color: #ffffff; 
-            line-height: 1.1; 
-            word-break: break-word; 
-        }
+        .panel-left { width: 100%; padding-top: 10px; }
+        .panel-title-text { font-size: 2.2rem; font-weight: 900; color: #ffffff; line-height: 1.1; }
 
-        .panel-right { 
-            flex: 3; 
-            overflow-y: auto; 
-            padding-right: 25px; 
-            padding-bottom: 100px; 
-        }
+        .panel-right { width: 100%; padding-bottom: 100px; }
+        .panel-right::-webkit-scrollbar { width: 0px; } /* 手機隱藏捲動條 */
 
-        .panel-right::-webkit-scrollbar { width: 4px; }
-        .panel-right::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.4); border-radius: 4px; }
-        .panel-right::-webkit-scrollbar-track { background: transparent; }
+        .detail-text img { max-width: 100%; height: auto; border-radius: 12px; margin-bottom: 20px; display: block; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .detail-text h2 { font-size: 1.5rem; font-weight: 900; margin-bottom: 10px; color: #ffffff; }
+        .detail-text p { font-size: 1rem; line-height: 1.7; color: #dddddd; margin-bottom: 20px; }
 
-        .detail-text { width: 100%; }
-        .detail-text img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 8px; 
-            margin-bottom: 25px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08); 
-            display: block;
+        /* ✨ 關閉按鈕 (手機版必備) */
+        #close-btn {
+            position: absolute; top: 20px; right: 20px; width: 30px; height: 30px;
+            color: white; font-size: 24px; display: none; z-index: 110; cursor: pointer;
         }
-        .detail-text h2 {
-            font-size: 2rem;
-            font-weight: 900;
-            margin: 0 0 15px 0;
-            color: #ffffff;
-        }
-        .detail-text p {
-            font-size: 1.1rem;
-            line-height: 1.8;
-            color: #eeeeee;
-            margin-bottom: 25px;
-        }
+        body.panel-open #close-btn { display: block; }
 
+        @media (min-width: 769px) {
+            #ui-title { font-size: 6rem; }
+            .panel-content { flex-direction: row; padding: 0 60px; gap: 50px; }
+            .panel-left { flex: 1; padding-top: 150px; }
+            .panel-right { flex: 2; }
+            .panel-title-text { font-size: 3.5rem; }
+        }
     </style>
     
     <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
-
     <script type="importmap">
         {
             "imports": {
@@ -233,36 +102,28 @@
     </script>
 </head>
 <body>
-
-    <audio id="bg-music" loop>
-        <source src="music.mp3" type="audio/mpeg">
-    </audio>
+    <audio id="bg-music" loop><source src="music.mp3" type="audio/mpeg"></audio>
 
     <div id="loader">
         <div id="loader-text">INITIALIZING...</div>
         <div id="progress-bar"><div id="progress-fill"></div></div>
     </div>
     
-    <div id="brand">Juby chiuuuuu studio &lt;3 .</div>
+    <div id="brand" onclick="location.reload()">Juby chiuuuuu studio &lt;3 .</div>
 
     <div id="audio-toggle">
-        <svg id="icon-sound-off" viewBox="0 0 24 24">
-            <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
-        </svg>
-        <svg id="icon-sound-on" viewBox="0 0 24 24" style="display:none;">
-            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-        </svg>
+        <svg id="icon-sound-off" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+        <svg id="icon-sound-on" viewBox="0 0 24 24" style="display:none;"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
     </div>
 
     <div id="ui-layer">
-        <div id="ui-title-container">
-            <h1 id="ui-title"></h1>
-        </div>
+        <h1 id="ui-title"></h1>
         <div id="ui-subtitle"></div>
     </div>
 
     <div id="glass-panel">
         <div class="panel-handle"></div>
+        <div id="close-btn">✕</div>
         <div class="panel-content">
             <div class="panel-left">
                 <div class="panel-title-text" id="detail-panel-title"></div>
@@ -279,207 +140,82 @@
     import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
     import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-    const RADIUS = 20;            
-    const MODEL_FIXED_Y = 1.3;      
-    const CARD_COUNT = 25;        
+    const RADIUS = 20;
+    const CARD_COUNT = 25;
     const SPACE_COLOR = '#6c5b5e';
-
-    let scene, camera, renderer;
-    let carouselGroup;     
-    let centerModelGroup;  
-    let cardMeshes = [];   
-    let projects = [];     
     
-    let targetRotation = 0;
-    let currentRotation = 0;
-    let currentActiveIndex = -1; 
-    let activeCardUUID = null;   
-    let previewIndex = 0; 
-
-    let centerModelTargetScale = 2.0;
-
-    const CAMERA_BASE_Y = 22;
-    const CAMERA_BASE_Z = 75;
-
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
-    const manager = new THREE.LoadingManager();
-
-    let lights = [];
-    let studioEnvMap;
+    let scene, camera, renderer, carouselGroup, centerModelGroup, cardMeshes = [], projects = [];
+    let targetRotation = 0, currentRotation = 0, lastRotation = 0, rotationVelocity = 0;
+    let currentActiveIndex = -1, activeCardUUID = null, previewIndex = 0, centerModelTargetScale = 2.0;
+    
+    let isTouching = false, touchStartX = 0;
+    const CAMERA_BASE_Y = 18, CAMERA_BASE_Z = 70;
+    const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2(), manager = new THREE.LoadingManager();
+    let lights = [], studioEnvMap;
 
     init();
 
     async function init() {
         await fetchData();
-
-        scene = new THREE.Scene();
-        scene.background = new THREE.Color(SPACE_COLOR);
-        scene.fog = new THREE.Fog(SPACE_COLOR, 40, 140); 
-
-        camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 300);
-        camera.position.set(0, CAMERA_BASE_Y, CAMERA_BASE_Z); 
-        camera.lookAt(0, 0, 0);
+        scene = new THREE.Scene(); scene.background = new THREE.Color(SPACE_COLOR); scene.fog = new THREE.Fog(SPACE_COLOR, 40, 150);
         
-        camera.layers.enable(0);
-        camera.layers.enable(1);
+        const aspect = window.innerWidth / window.innerHeight;
+        camera = new THREE.PerspectiveCamera(aspect < 1 ? 45 : 35, aspect, 0.1, 500);
+        camera.position.set(0, CAMERA_BASE_Y, aspect < 1 ? 90 : 70); 
+        camera.lookAt(0, 0, 0);
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.VSMShadowMap; 
         document.body.appendChild(renderer.domElement);
 
         const pmremGenerator = new THREE.PMREMGenerator(renderer);
         studioEnvMap = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
 
-        setupLightsAndFloor();
-
-        if (projects.length > 0) {
-            await preloadAllModels();
-            switchPreviewModel(0); 
-        }
-
+        setupLights();
+        if (projects.length > 0) { await preloadAllModels(); switchPreviewModel(0); }
         createCarousel();
 
+        // 事件監聽
         window.addEventListener('resize', onWindowResize);
-        window.addEventListener('wheel', onWheel);
+        window.addEventListener('wheel', (e) => { targetRotation += e.deltaY * 0.0008; });
+        
+        // 滑鼠互動
         window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mousedown', () => { isTouching = true; });
+        window.addEventListener('mouseup', (e) => { isTouching = false; onClick(e); });
+
+        // 觸控互動 (手機關鍵)
+        window.addEventListener('touchstart', onTouchStart, { passive: false });
         window.addEventListener('touchmove', onTouchMove, { passive: false });
-        window.addEventListener('click', onClick);
+        window.addEventListener('touchend', onTouchEnd);
 
-        document.getElementById('brand').addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (currentActiveIndex !== -1) {
-                exitDetailMode();
-            }
-        });
-
-        const audioBtn = document.getElementById('audio-toggle');
-        const bgMusic = document.getElementById('bg-music');
-        const iconOn = document.getElementById('icon-sound-on');
-        const iconOff = document.getElementById('icon-sound-off');
-        let isPlaying = false;
-
-        audioBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); 
-            if (isPlaying) {
-                bgMusic.pause();
-                iconOn.style.display = 'none';
-                iconOff.style.display = 'block';
-            } else {
-                bgMusic.play();
-                iconOn.style.display = 'block';
-                iconOff.style.display = 'none';
-            }
-            isPlaying = !isPlaying;
-        });
-
-        const glassPanel = document.getElementById('glass-panel');
-        glassPanel.addEventListener('click', (e) => {
-            e.stopPropagation(); 
-            if (glassPanel.classList.contains('half-open')) {
-                glassPanel.classList.remove('half-open');
-                glassPanel.classList.add('full-open');
-            }
-        });
-
-        document.querySelector('.panel-handle').addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (glassPanel.classList.contains('full-open')) {
-                glassPanel.classList.remove('full-open');
-                glassPanel.classList.add('half-open');
-            } else {
-                glassPanel.classList.remove('half-open');
-                glassPanel.classList.add('full-open');
-            }
-        });
-
-        const loaderDiv = document.getElementById('loader');
-        loaderDiv.style.opacity = 0;
-        setTimeout(() => loaderDiv.remove(), 500);
-
+        setupUIEvents();
+        
+        document.getElementById('loader').style.opacity = 0;
+        setTimeout(() => document.getElementById('loader').remove(), 500);
         animate();
     }
 
-    function setupLightsAndFloor() {
-        const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
-        ambientLight.layers.set(0);
-        scene.add(ambientLight);
-
-        const studioAmbient = new THREE.AmbientLight(0xffffff, 2.0);
-        studioAmbient.layers.set(1);
-        scene.add(studioAmbient);
-
-        const topLight = new THREE.DirectionalLight(0xffffff, 0.5);
-        topLight.position.set(0, 40, 0);
-        topLight.castShadow = true;
-        topLight.shadow.mapSize.width = 512;
-        topLight.shadow.mapSize.height = 512;
-        topLight.shadow.bias = -0.0001;
-        topLight.shadow.radius = 10;
-        topLight.shadow.blurSamples = 10;
-        topLight.layers.enable(0);
-        topLight.layers.enable(1);
-        scene.add(topLight);
-
-        const colors = [0xffd54f, 0xc084fc, 0xff8a65, 0xf472b6]; 
-        const intensities = [2500, 2500, 1800, 1800]; 
-        
-        for(let i = 0; i < 4; i++) {
-            const light = new THREE.PointLight(colors[i], intensities[i], 200);
-            light.layers.set(0); 
-            scene.add(light);
-            lights.push(light);
-        }
-
-        const floorGeo = new THREE.PlaneGeometry(1000, 1000); 
-        const floorMat = new THREE.MeshStandardMaterial({ 
-            color: new THREE.Color(SPACE_COLOR), 
-            roughness: 1.0,  
-            metalness: 0.0
-        });
-        const floor = new THREE.Mesh(floorGeo, floorMat);
-        floor.rotation.x = -Math.PI / 2; 
-        floor.position.y = -4.0; 
-        floor.receiveShadow = true; 
-        floor.layers.set(0); 
-        scene.add(floor);
-
-        centerModelGroup = new THREE.Group();
-        scene.add(centerModelGroup);
+    async function fetchData() {
+        const items = ['a', 'b', 'c', 'd'];
+        projects = await Promise.all(items.map(async (name, index) => {
+            let desc = ""; let customTitle = name.toUpperCase();
+            if (name === 'a') customTitle = "JUBY 2014";
+            try { const r = await fetch(`txts/${name}.txt?t=${Date.now()}`); if(r.ok) desc = await r.text(); } catch(e){}
+            return { id: index, letter: name.toUpperCase(), title: customTitle, image: `images/${name}.png?t=${Date.now()}`, model: `models/${name}.glb`, desc: desc, sceneObject: null, normalizedScale: 1 };
+        }));
     }
 
-    async function fetchData() {
-        const status = document.getElementById('loader-text');
-        status.innerText = "FETCHING DATA...";
-        try {
-            const nocache = new Date().getTime();
-            const items = ['a', 'b', 'c', 'd']; 
-
-            projects = await Promise.all(items.map(async (name, index) => {
-                let desc = "";
-                let customTitle = name.toUpperCase(); 
-                if (name === 'a') { customTitle = "JUBY 2014"; }
-
-                try {
-                    const r = await fetch(`txts/${name}.txt?t=${nocache}`);
-                    if(r.ok) desc = await r.text();
-                } catch(e){}
-
-                return {
-                    id: index,
-                    letter: name.toUpperCase(), 
-                    title: customTitle, 
-                    image: `images/${name}.png?t=${nocache}`, 
-                    model: `models/${name}.glb`,
-                    desc: desc,
-                    sceneObject: null,
-                    normalizedScale: 1 
-                };
-            }));
-        } catch (e) { console.error(e); }
+    function setupLights() {
+        scene.add(new THREE.AmbientLight(0xffffff, 1.5));
+        const colors = [0xffd54f, 0xc084fc, 0xff8a65, 0xf472b6];
+        for(let i = 0; i < 4; i++) {
+            const light = new THREE.PointLight(colors[i], 2000, 150);
+            lights.push(light); scene.add(light);
+        }
+        centerModelGroup = new THREE.Group(); scene.add(centerModelGroup);
     }
 
     async function preloadAllModels() {
@@ -488,229 +224,205 @@
         dracoLoader.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
         loader.setDRACOLoader(dracoLoader);
 
-        const total = projects.length;
-        let loaded = 0;
-        document.getElementById('loader-text').innerText = "LOADING MODELS...";
-
-        const promises = projects.map((project) => {
-            return new Promise((resolve) => {
+        for (const project of projects) {
+            await new Promise(res => {
                 loader.load(project.model, (gltf) => {
                     const model = gltf.scene;
-                    model.traverse((node) => { 
-                        if (node.isMesh) { 
-                            node.castShadow = true; 
-                            node.receiveShadow = true; 
-                            node.layers.set(1); 
-                            if (node.material) {
-                                node.material.envMap = studioEnvMap;
-                                node.material.envMapIntensity = 1.0;
-                                node.material.needsUpdate = true;
-                            }
-                        }
-                    });
+                    model.traverse(n => { if(n.isMesh) { n.castShadow = true; n.material.envMap = studioEnvMap; n.layers.set(1); } });
                     const box = new THREE.Box3().setFromObject(model);
-                    const center = new THREE.Vector3();
-                    box.getCenter(center);
-                    model.position.sub(center); 
-                    const size = new THREE.Vector3();
-                    box.getSize(size);
-                    const maxDim = Math.max(size.x, size.y, size.z);
-                    project.normalizedScale = 4.0 / maxDim;
-                    model.visible = false; 
-                    centerModelGroup.add(model);
-                    project.sceneObject = model;
-                    loaded++;
-                    document.getElementById('progress-fill').style.width = Math.round((loaded / total) * 100) + "%";
-                    resolve();
-                }, undefined, () => resolve());
+                    const size = new THREE.Vector3(); box.getSize(size);
+                    project.normalizedScale = 5.0 / Math.max(size.x, size.y, size.z);
+                    model.visible = false; centerModelGroup.add(model); project.sceneObject = model;
+                    res();
+                }, undefined, res);
             });
-        });
-        await Promise.all(promises);
-        renderer.compile(scene, camera);
-    }
-
-    function createCarousel() {
-        carouselGroup = new THREE.Group();
-        scene.add(carouselGroup);
-        if (projects.length === 0) return;
-        const loader = new THREE.TextureLoader();
-        for (let i = 0; i < CARD_COUNT; i++) {
-            const dataIndex = i % projects.length;
-            const project = projects[dataIndex];
-            const angle = (i / CARD_COUNT) * Math.PI * 2;
-            const x = Math.sin(angle) * RADIUS;
-            const z = Math.cos(angle) * RADIUS;
-            const geometry = new THREE.PlaneGeometry(3.6, 2.4); 
-            const material = new THREE.MeshStandardMaterial({ 
-                color: 0x999999, 
-                side: THREE.DoubleSide, 
-                transparent: true,     
-                opacity: 0.7,          
-                roughness: 0.4,        
-                metalness: 0.2
-            });
-            loader.load(project.image, (texture) => {
-                texture.colorSpace = THREE.SRGBColorSpace;
-                material.map = texture;
-                material.color.setHex(0xffffff); 
-                material.needsUpdate = true;
-            }, undefined, (err) => {});
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.position.set(x, 0, z);
-            mesh.lookAt(0, 0, 0);
-            mesh.rotateY(Math.PI / 2); 
-            mesh.layers.set(0); 
-            mesh.userData = { 
-                id: i, project: project, dataIndex: dataIndex, originalAngle: angle,
-                targetLocalY: 0, currentLocalY: 0, targetOpacity: 0.7, baseOpacity: 0.7    
-            };
-            carouselGroup.add(mesh);
-            cardMeshes.push(mesh);
         }
     }
 
-    function switchPreviewModel(dataIndex) {
-        previewIndex = dataIndex;
-        updateUIText(dataIndex);
-        projects.forEach((p, idx) => {
-            if (p.sceneObject) {
-                p.sceneObject.visible = (idx === dataIndex);
-                if (idx === dataIndex) {
-                    p.sceneObject.rotation.y = 0;
-                    p.sceneObject.position.y = MODEL_FIXED_Y;
-                    if (currentActiveIndex === -1) { centerModelTargetScale = p.normalizedScale * 2.0; }
+    function createCarousel() {
+        carouselGroup = new THREE.Group(); scene.add(carouselGroup);
+        const texLoader = new THREE.TextureLoader();
+        for (let i = 0; i < CARD_COUNT; i++) {
+            const p = projects[i % projects.length];
+            const angle = (i / CARD_COUNT) * Math.PI * 2;
+            const mesh = new THREE.Mesh(
+                new THREE.PlaneGeometry(3.6, 2.4),
+                new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.7 })
+            );
+            texLoader.load(p.image, (t) => { mesh.material.map = t; mesh.material.needsUpdate = true; });
+            mesh.position.set(Math.sin(angle)*RADIUS, 0, Math.cos(angle)*RADIUS);
+            mesh.lookAt(0, 0, 0); mesh.rotateY(Math.PI / 2);
+            mesh.userData = { dataIndex: i % projects.length, originalAngle: angle, targetY: 0, currentY: 0 };
+            carouselGroup.add(mesh); cardMeshes.push(mesh);
+        }
+    }
+
+    function onTouchStart(e) { 
+        isTouching = true; 
+        touchStartX = e.touches[0].clientX; 
+        rotationVelocity = 0; 
+    }
+
+    function onTouchMove(e) {
+        if (!isTouching || currentActiveIndex !== -1) return;
+        const deltaX = e.touches[0].clientX - touchStartX;
+        targetRotation += deltaX * 0.005;
+        touchStartX = e.touches[0].clientX;
+        e.preventDefault();
+    }
+
+    function onTouchEnd(e) { 
+        isTouching = false; 
+        if (Math.abs(rotationVelocity) < 0.001) onClick(e); 
+    }
+
+    function onClick(e) {
+        const clientX = e.clientX || (e.changedTouches && e.changedTouches[0].clientX);
+        const clientY = e.clientY || (e.changedTouches && e.changedTouches[0].clientY);
+        
+        mouse.x = (clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+        
+        raycaster.setFromCamera(mouse, camera);
+        const hits = raycaster.intersectObjects(cardMeshes);
+        
+        if (hits.length > 0) {
+            const hit = hits[0].object;
+            if (currentActiveIndex === hit.userData.dataIndex) return;
+            enterDetailMode(hit);
+            targetRotation = -hit.userData.originalAngle;
+        } else if (currentActiveIndex !== -1) {
+            // 點擊空白處不自動關閉，改由面板邏輯處理
+        }
+    }
+
+    function enterDetailMode(mesh) {
+        currentActiveIndex = mesh.userData.dataIndex;
+        switchPreviewModel(currentActiveIndex);
+        
+        const p = projects[currentActiveIndex];
+        document.getElementById('detail-panel-title').innerText = p.title;
+        document.getElementById('detail-desc').innerHTML = p.desc;
+        
+        document.getElementById('glass-panel').classList.add('full-open');
+        document.body.classList.add('panel-open');
+        
+        activeCardUUID = mesh.uuid;
+        mesh.userData.targetY = 40; // 飛上去
+    }
+
+    function exitDetailMode() {
+        currentActiveIndex = -1;
+        document.getElementById('glass-panel').classList.remove('full-open');
+        document.body.classList.remove('panel-open');
+        if (activeCardUUID) {
+            const m = cardMeshes.find(c => c.uuid === activeCardUUID);
+            if (m) m.userData.targetY = 0;
+        }
+        activeCardUUID = null;
+    }
+
+    function switchPreviewModel(idx) {
+        const p = projects[idx]; if(!p) return;
+        document.getElementById('ui-title').innerText = p.letter;
+        document.getElementById('ui-subtitle').innerText = p.title;
+        projects.forEach((proj, i) => {
+            if (proj.sceneObject) {
+                proj.sceneObject.visible = (i === idx);
+                if (i === idx) {
+                    proj.sceneObject.position.y = 1.3;
+                    centerModelTargetScale = proj.normalizedScale * (currentActiveIndex===-1 ? 2.2 : 2.8);
                 }
             }
         });
     }
 
-    function updateUIText(dataIndex) {
-        const p = projects[dataIndex];
-        if(!p) return;
-        document.getElementById('ui-title').innerText = p.letter || "";
-        document.getElementById('ui-subtitle').innerText = p.title || ""; 
+    function setupUIEvents() {
+        // 音樂
+        const btn = document.getElementById('audio-toggle');
+        const audio = document.getElementById('bg-music');
+        let playing = false;
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playing ? audio.pause() : audio.play();
+            playing = !playing;
+            document.getElementById('icon-sound-on').style.display = playing ? 'block' : 'none';
+            document.getElementById('icon-sound-off').style.display = playing ? 'none' : 'block';
+        });
+
+        // 關閉面板
+        document.getElementById('close-btn').addEventListener('click', exitDetailMode);
+        document.querySelector('.panel-handle').addEventListener('click', exitDetailMode);
     }
 
-    function enterDetailMode(cardMesh) {
-        const dataIndex = cardMesh.userData.dataIndex;
-        currentActiveIndex = dataIndex;
-        switchPreviewModel(dataIndex);
-        const p = projects[dataIndex];
-        document.getElementById('detail-panel-title').innerText = p.title;
-        document.getElementById('detail-desc').innerHTML = p.desc;
-        const panel = document.getElementById('glass-panel');
-        panel.classList.remove('full-open');
-        panel.classList.add('half-open');
-        document.body.classList.add('panel-open');
-        centerModelTargetScale = p.normalizedScale * 2.5; 
-        activeCardUUID = cardMesh.uuid;
-        cardMesh.userData.targetLocalY = 50; 
-        cardMesh.userData.targetOpacity = 0; 
-    }
-
-    function exitDetailMode() {
-        currentActiveIndex = -1;
-        document.getElementById('glass-panel').classList.remove('half-open', 'full-open');
-        document.body.classList.remove('panel-open');
-        const p = projects[previewIndex];
-        if(p) centerModelTargetScale = p.normalizedScale * 2.0; 
-        if (activeCardUUID) {
-            const mesh = cardMeshes.find(m => m.uuid === activeCardUUID);
-            if (mesh) {
-                mesh.userData.targetLocalY = 0; 
-                mesh.userData.targetOpacity = mesh.userData.baseOpacity;
-            }
-        }
-        activeCardUUID = null;
-        setTimeout(() => { if(currentActiveIndex === -1) { document.getElementById('detail-desc').innerHTML = ''; } }, 500);
-    }
-
-    function onClick(event) {
-        raycaster.setFromCamera(mouse, camera);
-        const intersects = raycaster.intersectObjects(cardMeshes);
-        if (intersects.length > 0) {
-            const hit = intersects[0].object;
-            const dataIndex = hit.userData.dataIndex;
-            if (currentActiveIndex === dataIndex) return;
-            enterDetailMode(hit);
-            let targetAngle = -hit.userData.originalAngle;
-            const currentRot = currentRotation;
-            const twoPi = Math.PI * 2;
-            const cycles = Math.floor(currentRot / twoPi);
-            targetAngle += cycles * twoPi;
-            const diff = targetAngle - currentRot;
-            if (diff > Math.PI) targetAngle -= twoPi;
-            else if (diff < -Math.PI) targetAngle += twoPi;
-            targetRotation = targetAngle;
-        } else { exitDetailMode(); }
+    function onMouseMove(e) {
+        if (currentActiveIndex !== -1) return;
+        mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
     }
 
     function onWindowResize() {
-        camera.aspect = window.innerWidth / window.innerHeight;
+        const aspect = window.innerWidth / window.innerHeight;
+        camera.aspect = aspect;
+        camera.fov = aspect < 1 ? 45 : 35;
+        camera.position.z = aspect < 1 ? 90 : 70;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
     }
 
-    function onWheel(event) { targetRotation += event.deltaY * 0.0008; }
-
-    function onMouseMove(event) {
-        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-        updateCamera();
-    }
-
-    function onTouchMove(event) {
-        if (event.touches.length > 0) {
-            mouse.x = (event.touches[0].clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.touches[0].clientY / window.innerHeight) * 2 + 1;
-            updateCamera();
+    function animate() {
+        requestAnimationFrame(animate);
+        const time = Date.now() * 0.0002;
+        
+        // 慣性滑動計算
+        if (!isTouching) {
+            rotationVelocity = (targetRotation - currentRotation) * 0.05;
+            currentRotation += rotationVelocity;
+        } else {
+            currentRotation += (targetRotation - currentRotation) * 0.15;
         }
-    }
 
-    function updateCamera() {
-        const targetCamX = -mouse.x * 4; 
-        const targetCamY = mouse.y * 4 + CAMERA_BASE_Y;
+        if (carouselGroup) carouselGroup.rotation.y = currentRotation;
+
+        // 燈光與相機隨動
+        lights.forEach((l, i) => {
+            const offset = (i * Math.PI) / 2;
+            l.position.set(Math.sin(time + offset)*25, 10 + Math.sin(time*1.5)*5, Math.cos(time + offset)*25);
+        });
+
+        const targetCamX = -mouse.x * 5;
+        const targetCamY = mouse.y * 5 + CAMERA_BASE_Y;
         camera.position.x += (targetCamX - camera.position.x) * 0.05;
         camera.position.y += (targetCamY - camera.position.y) * 0.05;
         camera.lookAt(0, 0, 0);
-    }
 
-    function animate() {
-        requestAnimationFrame(animate);
-        const time = Date.now() * 0.0002; 
-        if (lights.length === 4) {
-            lights[0].position.set(Math.sin(time)*25, 8+Math.sin(time*1.5)*3, Math.cos(time)*25);
-            lights[1].position.set(Math.sin(time+Math.PI)*25, 8-Math.sin(time*1.5)*3, Math.cos(time+Math.PI)*25);
-            lights[2].position.set(Math.cos(time*1.2)*15, 12+Math.cos(time*2)*2, Math.sin(time*1.2)*15);
-            lights[3].position.set(Math.cos(time*1.2+Math.PI)*15, 12-Math.cos(time*2)*2, Math.sin(time*1.2+Math.PI)*15);
-        }
-        currentRotation += (targetRotation - currentRotation) * 0.06;
-        if (carouselGroup) carouselGroup.rotation.y = currentRotation;
-        cardMeshes.forEach(mesh => {
-            mesh.userData.currentLocalY += (mesh.userData.targetLocalY - mesh.userData.currentLocalY) * 0.05;
-            mesh.position.y = mesh.userData.currentLocalY;
-            if (mesh.material) { mesh.material.opacity += (mesh.userData.targetOpacity - mesh.material.opacity) * 0.05; }
-        });
-        if (currentActiveIndex === -1) {
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(cardMeshes);
-            cardMeshes.forEach(mesh => { if (mesh.uuid !== activeCardUUID) { mesh.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1); mesh.userData.targetOpacity = mesh.userData.baseOpacity; } });
-            document.body.style.cursor = 'default';
-            if (intersects.length > 0) {
-                const hit = intersects[0].object;
-                document.body.style.cursor = 'pointer';
-                hit.scale.lerp(new THREE.Vector3(1.3, 1.3, 1.3), 0.15);
-                if (hit.uuid !== activeCardUUID) hit.userData.targetOpacity = 1.0;
-                if (previewIndex !== hit.userData.dataIndex) switchPreviewModel(hit.userData.dataIndex);
+        // 處理卡片動畫
+        cardMeshes.forEach(m => {
+            m.userData.currentY += (m.userData.targetY - m.userData.currentY) * 0.1;
+            m.position.y = m.userData.currentY;
+            
+            // 自動預覽邏輯 (手機版在沒打開面板時才偵測)
+            if (currentActiveIndex === -1) {
+                const worldPos = new THREE.Vector3();
+                m.getWorldPosition(worldPos);
+                const distToFront = worldPos.distanceTo(new THREE.Vector3(0, 0, RADIUS));
+                if (distToFront < 5 && previewIndex !== m.userData.dataIndex) {
+                    switchPreviewModel(m.userData.dataIndex);
+                    previewIndex = m.userData.dataIndex;
+                }
+                m.scale.lerp(new THREE.Vector3(distToFront < 5 ? 1.3 : 1, distToFront < 5 ? 1.3 : 1, 1), 0.1);
             }
-        }
+        });
+
+        // 處理中心模型
         projects.forEach(p => {
             if (p.sceneObject && p.sceneObject.visible) {
                 p.sceneObject.rotation.y += 0.005;
-                const nextS = p.sceneObject.scale.x + (centerModelTargetScale - p.sceneObject.scale.x) * 0.05;
-                p.sceneObject.scale.set(nextS, nextS, nextS);
+                const s = p.sceneObject.scale.x + (centerModelTargetScale - p.sceneObject.scale.x) * 0.05;
+                p.sceneObject.scale.set(s, s, s);
             }
         });
+
         renderer.render(scene, camera);
     }
 </script>
