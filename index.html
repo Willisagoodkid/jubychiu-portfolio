@@ -309,36 +309,41 @@
 
     init();
 
-    async function init() {
-        await fetchData();
+async function fetchData() {
+        const status = document.getElementById('loader-text');
+        status.innerText = "FETCHING DATA...";
+        try {
+            const nocache = new Date().getTime();
+            
+            const items = ['a', 'b', 'c', 'd']; 
 
-        scene = new THREE.Scene();
-        scene.background = new THREE.Color(SPACE_COLOR);
-        scene.fog = new THREE.Fog(SPACE_COLOR, 40, 140); 
+            projects = await Promise.all(items.map(async (name, index) => {
+                let desc = "";
+                let customTitle = name.toUpperCase(); 
+                if (name === 'a') {
+                    customTitle = "JUBY 2014"; 
+                }
 
-        camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 300);
-        camera.position.set(0, CAMERA_BASE_Y, CAMERA_BASE_Z); 
-        camera.lookAt(0, 0, 0);
-        
-        camera.layers.enable(0);
-        camera.layers.enable(1);
+                try {
+                    // ✨ 拿掉前面的 API_URL 和斜線，直接寫 txts/...
+                    const r = await fetch(`txts/${name}.txt?t=${nocache}`);
+                    if(r.ok) desc = await r.text();
+                } catch(e){}
 
-        renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.VSMShadowMap; 
-        document.body.appendChild(renderer.domElement);
-
-        const pmremGenerator = new THREE.PMREMGenerator(renderer);
-        studioEnvMap = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
-
-        setupLightsAndFloor();
-
-        if (projects.length > 0) {
-            await preloadAllModels();
-            switchPreviewModel(0); 
-        }
+                return {
+                    id: index,
+                    letter: name.toUpperCase(), 
+                    title: customTitle, 
+                    // ✨ 拿掉前面的 API_URL 和斜線，直接寫 images/... 和 models/...
+                    image: `images/${name}.png?t=${nocache}`, 
+                    model: `models/${name}.glb`,
+                    desc: desc,
+                    sceneObject: null,
+                    normalizedScale: 1 
+                };
+            }));
+        } catch (e) { console.error(e); }
+    }
 
         createCarousel();
 
