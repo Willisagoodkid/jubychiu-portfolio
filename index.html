@@ -35,7 +35,7 @@
         }
         body.panel-open #ui-layer { transform: translateY(-200px); opacity: 0; }
         #ui-title { font-size: 5.5rem; font-weight: 900; margin: 0; line-height: 0.85; text-transform: uppercase; }
-        #ui-subtitle { font-size: 1.2rem; font-weight: 700; margin: 5px 0 0 0; padding-left: 12px; border-left: 4px solid #ffffff; line-height: 1.2; }
+        #ui-subtitle { font-size: 1.2rem; font-weight: 700; margin: 0; padding-left: 12px; border-left: 4px solid #ffffff; line-height: 1.2; }
 
         #glass-panel {
             position: absolute; bottom: 0; left: 0; width: 100%; height: 85vh; 
@@ -68,16 +68,6 @@
 
         #close-btn { position: absolute; top: 20px; right: 25px; width: 30px; height: 30px; color: white; font-size: 24px; display: none; z-index: 110; cursor: pointer; }
         body.panel-open #close-btn { display: block; }
-
-        @media (max-width: 768px) {
-            #brand { top: 25px; left: 25px; font-size: 1rem; }
-            #audio-toggle { top: 20px; right: 25px; width: 40px; height: 40px; }
-            #audio-toggle svg { width: 18px; height: 18px; }
-            #ui-layer { left: 25px; bottom: 12%; }
-            #ui-title { font-size: 3.5rem; }
-            #ui-subtitle { font-size: 1rem; }
-            .panel-title-text { font-size: 2.2rem; }
-        }
 
         @media (min-width: 769px) {
             .panel-content { flex-direction: row; }
@@ -135,21 +125,19 @@
     import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
     import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-    const aspect = window.innerWidth / window.innerHeight;
-    const RADIUS = aspect < 1 ? 20 : 20; const CARD_COUNT = 25; const SPACE_COLOR = '#6c5b5e';
-    
+    // 💡 調整核心尺寸，讓卡片更精緻
+    const RADIUS = aspect < 1 ? 14 : 20; const CARD_COUNT = 25; const SPACE_COLOR = '#6c5b5e';
     let scene, camera, renderer, carouselGroup, centerModelGroup, cardMeshes = [], projects = [];
     let targetRotation = 0, currentRotation = 0, rotationVelocity = 0;
     let currentActiveIndex = -1, activeCardUUID = null, previewIndex = 0;
     
-    let isTouching = false, touchStartX = 0, touchStartY = 0, lastTouchX = 0, lastTouchY = 0, touchStartTime = 0;
-    // 💡 改善手機底部怪顯示：提高 Y 軸，LookAt 更遠
-    const CAMERA_BASE_Y = aspect < 1 ? 26 : 22; 
+    let isTouching = false, touchStartX = 0;
+    const CAMERA_BASE_Y = aspect < 1 ? 26 : 22; // 💡 移動相機，防止文字與卡片重疊
     const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2(), manager = new THREE.LoadingManager();
     let lights = [];
 
-    // 💡 陀螺儀核心動態變數
-    let gyroTargetX = 0, gyroTargetY = 0, gyroCurrentX = 0, gyroCurrentY = 0, gyroEnabled = false;
+    // RWD 設定
+    const aspect = window.innerWidth / window.innerHeight;
 
     init();
 
@@ -157,48 +145,40 @@
         await fetchData();
         scene = new THREE.Scene(); scene.background = new THREE.Color(SPACE_COLOR); scene.fog = new THREE.Fog(SPACE_COLOR, 40, 140);
         
-        // 💡 ✨ 改善變形視角：手機直向圓環自然縮小 0.7 比例 ✨ 💡
-        // 手機直向（aspect < 1）時擴大 FOV 至 48，並把鏡頭稍微拉遠到 115，
-        // 圓環物理半徑不變，視覺上在手機端自動精緻縮小 0.7 倍，絕不撞字，且底部完全乾淨。
-        camera = new THREE.PerspectiveCamera(aspect < 1 ? 48 : 35, aspect, 0.1, 300);
-        camera.position.set(0, CAMERA_BASE_Y, aspect < 1 ? 115 : 75); 
-        camera.lookAt(0, aspect < 1 ? 5 : 0, 0);
-
-        // 強制解鎖鏡頭渲染層，防止中間模型隱形
-        camera.layers.enable(0);
-        camera.layers.enable(1);
+        camera = new THREE.PerspectiveCamera(aspect < 1 ? 50 : 35, aspect, 0.1, 300);
+        camera.position.set(0, CAMERA_BASE_Y, aspect < 1 ? 65 : 75); 
+        camera.lookAt(0, aspect < 1 ? 6 : 0, 0);
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.shadowMap.enabled = true;
-        
-        // 徹底解鎖 ToneMapping，釋放黃紫流體漸層飽和度，光感變糊 Mood++
-        renderer.toneMapping = THREE.NoToneMapping;
         document.body.appendChild(renderer.domElement);
 
         const pmremGenerator = new THREE.PMREMGenerator(renderer);
+        // ✨ 環境貼圖，營造Mood
         const studioEnvMap = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
 
         setupLightsAndFloor(studioEnvMap);
         createCarousel();
         
-        window.centerModelTargetScale = aspect < 1 ? 1.5 : 2.2;
+        // 💡 復活中間模型的關鍵：先建立代碼結構，等模型預載完再設定。
+        window.centerModelTargetScale = aspect < 1 ? 1.5 : 2.0;
 
         if (projects.length > 0) { 
-            // 💡 100% 復活中間模型：Draco 加載代碼移入preload
+            // 💡 復活中間模型的關鍵修正：使用 await 強制等待模型預載完畢
             await preloadAllModels(studioEnvMap); 
+            // 💡 復活中間模型的關鍵修正：等模型載入完，才執行 switch，確保第一次打開時能看到模型。
             switchPreviewModel(0); 
         }
 
         window.addEventListener('resize', onWindowResize);
-        window.addEventListener('wheel', (e) => { if(currentActiveIndex === -1) targetRotation += e.deltaY * 0.0008; });
+        window.addEventListener('wheel', (e) => { targetRotation += e.deltaY * 0.0008; });
         window.addEventListener('mousemove', onMouseMove);
         
         window.addEventListener('mousedown', () => { isTouching = true; });
         window.addEventListener('mouseup', (e) => { isTouching = false; onClick(e); });
         
-        // RWD 下隱形活化隨角度移動功能 (陀螺儀)
         window.addEventListener('touchstart', onTouchStart, { passive: false });
         window.addEventListener('touchmove', onTouchMove, { passive: false });
         window.addEventListener('touchend', onTouchEnd);
@@ -210,23 +190,27 @@
     }
 
     function setupLightsAndFloor(studioEnvMap) {
-        scene.add(new THREE.AmbientLight(0xffffff, 1.3));
+        // ✨ 修正亮點：降低環境光， Mood++
+        scene.add(new THREE.AmbientLight(0xffffff, 1.2));
         
-        // ✨ 光感變糊、變高的 Mood 微調
+        // ✨ 修正亮點：定義你的Mood顏色（黃/橙、紫/紅）
         const lightColors = [0xffccaa, 0xffbb99, 0xffcccc, 0xffaaee];
-        const lightIntensities = aspect < 1 ? [140, 120, 120, 100] : [240, 200, 200, 160];
+        
+        // ✨ 修正亮點：大幅降低強度 (intensity)，增加 decay 讓光影更細緻
+        const lightIntensities = aspect < 1 ? [120, 100, 100, 80] : [250, 200, 200, 150];
 
         for(let i = 0; i < 4; i++) {
-            const light = new THREE.PointLight(lightColors[i], lightIntensities[i], 220);
-            light.decay = 1.2; 
+            const light = new THREE.PointLight(lightColors[i], lightIntensities[i], 200);
+            light.decay = aspect < 1 ? 1.5 : 1.2; // 光在深處慢慢衰減
             lights.push(light); scene.add(light);
         }
         
+        // 地板接收Mood光影與陰影
         const floorGeo = new THREE.PlaneGeometry(1000, 1000);
         const floorMat = new THREE.MeshStandardMaterial({ 
-            color: new THREE.Color('#463838'), 
-            roughness: 0.96, // 地板完全不反光，光感變糊
-            metalness: 0.05,
+            color: new THREE.Color('#4a3c3c'), // Mood 棕灰
+            roughness: 0.8,
+            metalness: 0.1,
             envMap: studioEnvMap
         });
         const floor = new THREE.Mesh(floorGeo, floorMat);
@@ -234,19 +218,6 @@
         floor.receiveShadow = true; 
         scene.add(floor);
         
-        // ✨【感光大球體內壁】：徹底刪除怪邊界
-        // 使用 THREE.SphereGeometry(75, 32, 32) 幾何球體代替平面地板背景。
-        // 這個球體完全包裹場景，粗糙度設定為 0.95。
-        // 它捕捉霓虹流光變糊漸層，並彻底消除任何物理邊界線。
-        const bgWallGeo = new THREE.SphereGeometry(75, 32, 32);
-        const bgWallMat = new THREE.MeshStandardMaterial({ 
-            color: 0x554649, 
-            side: THREE.BackSide, 
-            roughness: 0.95, // 極致磨砂感感光 Mood
-            metalness: 0.1
-        });
-        const bgWall = new THREE.Mesh(bgWallGeo, bgWallMat); scene.add(bgWall);
-
         centerModelGroup = new THREE.Group(); scene.add(centerModelGroup);
     }
 
@@ -254,13 +225,13 @@
         const items = ['a', 'b', 'c', 'd']; 
         projects = await Promise.all(items.map(async (name, index) => {
             let desc = ""; 
-            let customTitle = "COLLECTION " + name.toUpperCase();
+            // 可以設定不同卡片的標題
+            let customTitle = name.toUpperCase();
             if (name === 'a') customTitle = "JUBY 2014";
-            if (name === 'b') customTitle = "JUBY FALL";
             if (name === 'c') customTitle = "JUBY DANCE";
-            if (name === 'd') customTitle = "JUBY STUDIO";
 
             try { 
+                // 防止 txt 快取
                 const r = await fetch(`txts/${name}.txt?t=${Date.now()}`); 
                 if(r.ok) desc = await r.text();
             } catch(e){}
@@ -268,9 +239,10 @@
         }));
     }
 
+    // ✨ 復活中間模型的重要代碼：Draco 解壓縮代碼
     async function preloadAllModels(studioEnvMap) {
         const loader = new GLTFLoader(manager);
-        // ✨ Draco 解壓縮
+        // Draco 解壓縮
         const dracoLoader = new DRACOLoader();
         dracoLoader.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
         loader.setDRACOLoader(dracoLoader);
@@ -282,25 +254,28 @@
                     model.traverse(n => {
                         if(n.isMesh) {
                             n.castShadow = true;
+                            // ✨ 復活中間模型的重要代碼：讓模型自帶環境反射 Mood
                             if(n.material) n.material.envMap = studioEnvMap;
-                            n.layers.set(1); // 中心模型指定在第 1 層
+                            n.layers.set(1); // 用於中心模型層
                         }
                     });
 
-                    // 自動標準化模型尺寸與原點校正
+                    // 💡 復活中間模型的重要修正：自動標準化尺度。
+                    // 無論外部檔案導出的模型是巨大還是極小，強制把它們縮放到符合卡片環的大小。
                     const box = new THREE.Box3().setFromObject(model);
-                    const center = new THREE.Vector3();
-                    box.getCenter(center);
-                    model.position.sub(center); 
-
                     const size = new THREE.Vector3(); box.getSize(size);
-                    project.normalizedScale = 4.0 / Math.max(size.x, size.y, size.z); 
+                    const maxDim = Math.max(size.x, size.y, size.z);
+                    // 將最大邊長標準化為 4，再根據手機/電腦端設定 TargetScale 進行細調
+                    project.normalizedScale = 4.0 / maxDim; 
                     
                     model.visible = false; 
                     centerModelGroup.add(model); 
                     project.sceneObject = model; 
                     res();
-                }, undefined, () => { res(); });
+                }, undefined, () => {
+                    console.log("Model loading skipped or delayed for:", project.model);
+                    res(); // 即使載入失敗也不要卡住代碼執行
+                });
             });
         }
     }
@@ -308,94 +283,55 @@
     function createCarousel() {
         carouselGroup = new THREE.Group(); scene.add(carouselGroup);
         const texLoader = new THREE.TextureLoader();
+        // 如果想設定卡片 Mood色調 (例如黃/橘、紫/紅對應)
+        const moodPalette = aspect < 1 ? [0xfff8f0, 0xf0f8ff, 0xfff0f8, 0xfffff8] : [0xffffff, 0xffffff, 0xffffff, 0xffffff];
 
         for (let i = 0; i < CARD_COUNT; i++) {
             const p = projects[i % projects.length];
             const angle = (i / CARD_COUNT) * Math.PI * 2;
-            
-            // 💡 ✨ 解除變白、變色光害：徹底換成 MeshBasicMaterial 材質 ！ ✨ 💡
-            // 這種材質完全不接受空間物理光照反應，100% 呈現圖片原本最純淨、乾淨的原色，轉動時絕不染色。
-            const mesh = new THREE.Mesh(
-                new THREE.PlaneGeometry(3.6, 2.4), 
-                new THREE.MeshBasicMaterial({ 
-                    color: 0xffffff, // 隔絕光害，保持原白
-                    transparent: true, 
-                    opacity: 0.75, 
-                    side: THREE.DoubleSide
-                })
-            );
+            const mesh = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 2.4), new THREE.MeshStandardMaterial({ 
+                color: moodPalette[i % 4], // 微弱 Mood
+                transparent: true, 
+                opacity: 0.7, 
+                side: THREE.DoubleSide
+            }));
             texLoader.load(p.image, (t) => { mesh.material.map = t; mesh.material.needsUpdate = true; });
             
             mesh.position.set(Math.sin(angle)*RADIUS, aspect < 1 ? -2 : 0, Math.cos(angle)*RADIUS);
-            mesh.lookAt(0, aspect < 1 ? 5 : 0, 0); mesh.rotateY(Math.PI / 2);
+            mesh.lookAt(0, aspect < 1 ? 6 : 0, 0); mesh.rotateY(Math.PI / 2);
             mesh.userData = { dataIndex: i % projects.length, originalAngle: angle, targetY: aspect < 1 ? -2 : 0, currentY: aspect < 1 ? -2 : 0 };
             carouselGroup.add(mesh); cardMeshes.push(mesh);
         }
     }
 
-    // 💡 隨手機角度傾斜活化機制
-    function triggerNaturalGyro() {
-        if (gyroEnabled) return;
-        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-            DeviceOrientationEvent.requestPermission()
-                .then(state => { if (state === 'granted') { window.addEventListener('deviceorientation', handleOrientation); gyroEnabled = true; } })
-                .catch(console.error);
-        } else {
-            window.addEventListener('deviceorientation', handleOrientation);
-            gyroEnabled = true;
-        }
-    }
-
-    function handleOrientation(event) {
-        if (currentActiveIndex !== -1) return;
-        const beta = event.beta; const gamma = event.gamma;
-        if (beta && gamma) {
-            // 平滑映射手機角度到相機
-            gyroTargetX = (gamma / 30) * 1.8; 
-            gyroTargetY = ((beta - 45) / 30) * 1.8; 
-        }
-    }
-
-    function onTouchStart(e) { isTouching = true; touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; lastTouchX = touchStartX; lastTouchY = touchStartY; touchStartTime = Date.now(); rotationVelocity = 0; }
+    function onTouchStart(e) { isTouching = true; touchStartX = e.touches[0].clientX; rotationVelocity = 0; }
     function onTouchMove(e) {
         if (!isTouching || currentActiveIndex !== -1) return;
-        const currentX = e.touches[0].clientX; const currentY = e.touches[0].clientY;
-        const deltaX = currentX - lastTouchX; const deltaY = currentY - lastTouchY;
-        
-        targetRotation += deltaX * 0.007 + deltaY * 0.004; 
-        lastTouchX = currentX; lastTouchY = currentY;
+        const deltaX = e.touches[0].clientX - touchStartX;
+        targetRotation += deltaX * (aspect < 1 ? 0.005 : 0.006); 
+        touchStartX = e.touches[0].clientX;
         e.preventDefault();
     }
-
-    function onTouchEnd(e) { 
-        isTouching = false; 
-        const duration = Date.now() - touchStartTime;
-        const totalDist = Math.sqrt(Math.pow(lastTouchX - touchStartX, 2) + Math.pow(lastTouchY - touchStartY, 2));
-        if (duration < 250 && totalDist < 15) onClick(e); 
-    }
+    function onTouchEnd(e) { isTouching = false; }
 
     function onClick(e) {
-        // ✨ 手機隨視角傾斜活化申請 (隱形活化)
-        triggerNaturalGyro();
-
-        if (currentActiveIndex !== -1) {
-            const path = e.composedPath ? e.composedPath() : [];
-            const clickedOnContent = path.some(el => el.classList && el.classList.contains('panel-content'));
-            if (!clickedOnContent && e.target.id !== 'audio-toggle') exitDetailMode();
-            return;
-        }
-
-        const clientX = e.clientX || lastTouchX; const clientY = e.clientY || lastTouchY;
-        mouse.x = (clientX / window.innerWidth) * 2 - 1; mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+        const clientX = e.clientX || (e.changedTouches && e.changedTouches[0].clientX);
+        const clientY = e.clientY || (e.changedTouches && e.changedTouches[0].clientY);
+        if(!clientX || !clientY) return;
+        
+        mouse.x = (clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(clientY / window.innerHeight) * 2 + 1;
         
         raycaster.setFromCamera(mouse, camera);
         const hits = raycaster.intersectObjects(cardMeshes);
         if (hits.length > 0) {
             const hit = hits[0].object;
+            if (currentActiveIndex === hit.userData.dataIndex) return;
             enterDetailMode(hit);
             
             let targetAngle = -hit.userData.originalAngle;
-            const currentRot = currentRotation; const twoPi = Math.PI * 2;
+            const currentRot = currentRotation;
+            const twoPi = Math.PI * 2;
             const cycles = Math.floor(currentRot / twoPi);
             targetAngle += cycles * twoPi;
             const diff = targetAngle - currentRot;
@@ -407,14 +343,16 @@
 
     function enterDetailMode(mesh) {
         currentActiveIndex = mesh.userData.dataIndex;
+        // 先顯示面板
         document.getElementById('glass-panel').classList.add('full-open');
         document.body.classList.add('panel-open');
+        // 等切換完成再執行內容，體驗更好
         setTimeout(() => {
             switchPreviewModel(currentActiveIndex);
             const p = projects[currentActiveIndex];
             document.getElementById('detail-panel-title').innerText = p.title;
             document.getElementById('detail-desc').innerHTML = p.desc;
-        }, 200); 
+        }, 300); 
 
         activeCardUUID = mesh.uuid;
         mesh.userData.targetY = aspect < 1 ? 40 : 50; 
@@ -437,71 +375,101 @@
         document.getElementById('ui-subtitle').innerText = p.title;
         projects.forEach((proj, i) => {
             if (proj.sceneObject) {
+                // 💡 復活中間模型的關鍵修正：在這裡設定模型顯示
                 proj.sceneObject.visible = (i === idx);
                 if (i === idx) {
-                    proj.sceneObject.position.y = aspect < 1 ? 7.5 : 2.0; 
-                    window.centerModelTargetScale = (aspect < 1 ? 1.5 : 2.2) * proj.normalizedScale;
+                    // ✨ 讓中間模型高一點， Mood 更好
+                    proj.sceneObject.position.y = aspect < 1 ? 8 : 2.5; 
+                    // ✨ 復活中間模型的重要修正：在這裡設定 TargetScale，等animate自動lerp
+                    window.centerModelTargetScale = aspect < 1 ? 1.5 * proj.normalizedScale : 2.0 * proj.normalizedScale;
                 }
             }
         });
     }
 
     function setupUIEvents() {
-        const btn = document.getElementById('audio-toggle'); const audio = document.getElementById('bg-music'); let playing = false;
-        btn.addEventListener('click', (e) => { e.stopPropagation(); playing ? audio.pause() : audio.play(); playing = !playing; document.getElementById('icon-sound-on').style.display = playing ? 'block' : 'none'; document.getElementById('icon-sound-off').style.display = playing ? 'none' : 'block'; });
+        const btn = document.getElementById('audio-toggle');
+        const audio = document.getElementById('bg-music');
+        let playing = false;
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playing ? audio.pause() : audio.play();
+            playing = !playing;
+            document.getElementById('icon-sound-on').style.display = playing ? 'block' : 'none';
+            document.getElementById('icon-sound-off').style.display = playing ? 'none' : 'block';
+        });
         document.getElementById('close-btn').addEventListener('click', exitDetailMode);
         document.querySelector('.panel-handle').addEventListener('click', exitDetailMode);
     }
 
-    function onMouseMove(e) { if (currentActiveIndex !== -1) return; mouse.x = (e.clientX / window.innerWidth) * 2 - 1; mouse.y = -(e.clientY / window.innerHeight) * 2 + 1; }
-    function onWindowResize() { const aspect = window.innerWidth / window.innerHeight; camera.aspect = aspect; camera.position.z = aspect < 1 ? 115 : 75; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); }
+    function onMouseMove(e) {
+        if (currentActiveIndex !== -1) return;
+        mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    }
+
+    function onWindowResize() {
+        const aspect = window.innerWidth / window.innerHeight;
+        camera.aspect = aspect;
+        camera.position.z = aspect < 1 ? 65 : 75;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    }
 
     function animate() {
         requestAnimationFrame(animate);
         const time = Date.now() * 0.0002;
         
-        if (!isTouching) { rotationVelocity = (targetRotation - currentRotation) * 0.05; currentRotation += rotationVelocity; } 
-        else { currentRotation += (targetRotation - currentRotation) * 0.15; }
+        if (!isTouching) {
+            rotationVelocity = (targetRotation - currentRotation) * (aspect < 1 ? 0.04 : 0.05);
+            currentRotation += rotationVelocity;
+        } else {
+            currentRotation += (targetRotation - currentRotation) * (aspect < 1 ? 0.12 : 0.15);
+        }
         if (carouselGroup) carouselGroup.rotation.y = currentRotation;
 
-        // ✨ ✨ 燈光高空灑落：讓黃紫漸層徹底變糊 ✨ ✨
+        // ✨ 燈光運動修正：讓 Mood 色塊動得更慢、更細緻
         lights.forEach((l, i) => {
             const offset = (i * Math.PI) / 2;
-            const moodTime = aspect < 1 ? time * 0.6 : time; 
+            const moodTime = aspect < 1 ? time * 0.5 : time; // 手機動慢點
             l.position.set(
-                Math.sin(moodTime + offset) * 32, 
-                CAMERA_BASE_Y + 18, 
-                Math.cos(moodTime + offset) * 32
+                Math.sin(moodTime + offset)*25, 
+                CAMERA_BASE_Y - (aspect < 1 ? 12 : 8), // ✨ 讓燈光稍微低一點，Mood 在地板呈現
+                Math.cos(moodTime + offset)*25
             );
         });
 
-        // 隨視角微動與陀螺儀融合
-        gyroCurrentX += (gyroTargetX - gyroCurrentX) * 0.05;
-        gyroCurrentY += (gyroTargetY - gyroCurrentY) * 0.05;
-
-        const targetCamX = -mouse.x * (aspect < 1 ? 1 : 3) + gyroCurrentX;
-        const targetCamY = mouse.y * (aspect < 1 ? 1 : 3) + CAMERA_BASE_Y + gyroCurrentY;
+        // 相機微妙擺動，增加 Mood 呼吸感
+        const targetCamX = -mouse.x * (aspect < 1 ? 1 : 3);
+        const targetCamY = mouse.y * (aspect < 1 ? 1 : 3) + CAMERA_BASE_Y;
         camera.position.x += (targetCamX - camera.position.x) * 0.05;
         camera.position.y += (targetCamY - camera.position.y) * 0.05;
-        camera.lookAt(0, aspect < 1 ? 5 : 0, 0);
+        camera.lookAt(0, aspect < 1 ? 6 : 0, 0);
 
         cardMeshes.forEach(m => {
-            m.userData.currentY += (m.userData.targetY - m.userData.currentY) * 0.1; m.position.y = m.userData.currentY;
+            m.userData.currentY += (m.userData.targetY - m.userData.currentY) * 0.1;
+            m.position.y = m.userData.currentY;
+            
             if (currentActiveIndex === -1) {
-                const worldPos = new THREE.Vector3(); m.getWorldPosition(worldPos);
-                m.position.y += Math.sin(time + m.userData.originalAngle) * 0.2; 
+                const worldPos = new THREE.Vector3();
+                m.getWorldPosition(worldPos);
+                // 卡片呼吸 Mood 擺動
+                m.position.y += Math.sin(time + m.userData.originalAngle)*0.3;
 
                 const distToFront = worldPos.distanceTo(new THREE.Vector3(0, aspect < 1 ? -2 : 0, RADIUS));
-                if (distToFront < (aspect < 1 ? 3.5 : 5) && previewIndex !== m.userData.dataIndex) {
-                    switchPreviewModel(m.userData.dataIndex); previewIndex = m.userData.dataIndex;
+                if (distToFront < (aspect < 1 ? 3 : 5) && previewIndex !== m.userData.dataIndex) {
+                    switchPreviewModel(m.userData.dataIndex);
+                    previewIndex = m.userData.dataIndex;
                 }
-                m.scale.lerp(new THREE.Vector3(distToFront < (aspect < 1 ? 3.5 : 5) ? 1.25 : 1, distToFront < (aspect < 1 ? 3.5 : 5) ? 1.25 : 1, 1), 0.1);
+                m.scale.lerp(new THREE.Vector3(distToFront < (aspect < 1 ? 3 : 5) ? 1.3 : 1, distToFront < (aspect < 1 ? 3 : 5) ? 1.3 : 1, 1), 0.1);
             }
         });
 
         projects.forEach(p => {
             if (p.sceneObject && p.sceneObject.visible) {
+                // 模型Mood自轉
                 p.sceneObject.rotation.y += 0.005;
+                // ✨ 復活中間模型的重要修正：animate 自動 lerp 尺度，有呼吸感
                 const currentScale = p.sceneObject.scale.x;
                 const newScale = currentScale + (window.centerModelTargetScale - currentScale) * 0.05;
                 p.sceneObject.scale.set(newScale, newScale, newScale);
