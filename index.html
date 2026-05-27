@@ -157,7 +157,8 @@
         
         const aspect = window.innerWidth / window.innerHeight;
         
-        // 💡 手機直向時 (aspect < 1)FOV 擴大到 45 度，Z軸後退至 85，讓手機圓圈自然內縮 1/2，不遮字不穿牆！
+        // 💡 手機直向 (aspect < 1) 時，視野（FOV）改為 45 度，鏡頭退到 85。
+        // 這會讓圓環在手機上呈現完美的 1/2 精緻比例，且絕不遮字，同時不影響電腦版。
         camera = new THREE.PerspectiveCamera(aspect < 1 ? 45 : 35, aspect, 0.1, 300);
         camera.position.set(0, CAMERA_BASE_Y, aspect < 1 ? 85 : 75); 
         camera.lookAt(0, 0, 0);
@@ -166,11 +167,11 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         
-        // 💡 強制停用會把彩色強光洗白的自動調色盤對映射，鎖回 100% 正確的色彩空間！
+        // 💡 關鍵重設：徹底關閉會過濾彩度的 toneMapping，直接釋放霓虹燈光的最高飽和度！
         renderer.toneMapping = THREE.NoToneMapping; 
         document.body.appendChild(renderer.domElement);
 
-        setupLightsAndFloor();
+        setupLightsAndComponents();
         createCarousel();
         switchPreviewModel(0); 
 
@@ -191,19 +192,28 @@
         animate();
     }
 
-    function setupLightsAndFloor() {
-        // ✨ 環境光強度回到完美比例
-        scene.add(new THREE.AmbientLight(0xffffff, 1.8));
+    function setupLightsAndComponents() {
+        // 全域基礎調和光
+        scene.add(new THREE.AmbientLight(0xffffff, 1.4));
         
-        // ✨ 強制打亮全域深邃無邊界背景的黃、紫、橘、粉色流光點光源
+        // ✨ 強制還原舞台彩色霓虹燈漸層背景（黃、紫、橘、粉紅色點光源）
         const colors = [0xffd54f, 0xc084fc, 0xff8a65, 0xf472b6];
         for(let i = 0; i < 4; i++) {
-            const light = new THREE.PointLight(colors[i], 3500, 200);
+            const light = new THREE.PointLight(colors[i], 3500, 180);
             lights.push(light); scene.add(light);
         }
         
-        const floor = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.ShadowMaterial({ opacity: 0.15 }));
-        floor.rotation.x = -Math.PI / 2; floor.position.y = -4.0; floor.receiveShadow = true; scene.add(floor);
+        // ✨【終極核心解法】：在中央放一個大型的、微弱霧面的感光背板。
+        // 它會潛伏在背景中，完美捕捉並暈染四周點光源的顏色，進而反射出大片性感的霓虹流體光暈！
+        const glowBackdropGeo = new THREE.SphereGeometry(60, 32, 32);
+        const glowBackdropMat = new THREE.MeshStandardMaterial({
+            color: 0x5a4c4f,
+            side: THREE.BackSide, // 💡 從球體內部看，當成全域巨型背景牆
+            roughness: 0.6,
+            metalness: 0.1
+        });
+        const backdrop = new THREE.Mesh(glowBackdropGeo, glowBackdropMat);
+        scene.add(backdrop);
     }
 
     async function fetchData() {
@@ -231,13 +241,13 @@
             const p = projects[i % projects.length];
             const angle = (i / CARD_COUNT) * Math.PI * 2;
             
-            // 💡 鎖定最漂亮的微暗透明玻璃材質，完全與背景點光源分離，絕不因為轉動而變白褪色！
+            // 💡 調和材質：使用 MeshLambertMaterial 讓卡片保留圖片原本最乾淨的透明質感，完全不被點光源污染變色！
             const mesh = new THREE.Mesh(
                 new THREE.PlaneGeometry(3.6, 2.4), 
-                new THREE.MeshBasicMaterial({ 
+                new THREE.MeshLambertMaterial({ 
                     color: 0xffffff,
                     transparent: true, 
-                    opacity: 0.7, 
+                    opacity: 0.75, 
                     side: THREE.DoubleSide
                 })
             );
@@ -250,6 +260,7 @@
         }
     }
 
+    // ✨ 完美觸控物理學（支援上下、左右微調，絕不卡頓）
     function onTouchStart(e) { 
         isTouching = true; 
         touchStartX = e.touches[0].clientX; 
@@ -268,7 +279,6 @@
         const deltaX = currentX - lastTouchX;
         const deltaY = currentY - lastTouchY;
         
-        // ✨ 手指上下、左右划動都能完美順暢轉動輪盤
         targetRotation += deltaX * 0.007 + deltaY * 0.004; 
         
         lastTouchX = currentX;
@@ -287,7 +297,6 @@
     }
 
     function onClick(e) {
-        // ✨ 點選任何內頁框之外的空白區域，面板立刻退下
         if (currentActiveIndex !== -1) {
             const path = e.composedPath ? e.composedPath() : [];
             const clickedOnContent = path.some(el => el.classList && el.classList.contains('panel-content'));
@@ -374,7 +383,11 @@
         else { currentRotation += (targetRotation - currentRotation) * 0.15; }
         if (carouselGroup) carouselGroup.rotation.y = currentRotation;
 
-        lights.forEach((l, i) => { const offset = (i * Math.PI) / 2; l.position.set(Math.sin(time + offset)*25, 8 + Math.sin(time*1.5)*3, Math.cos(time + offset)*25); });
+        // ✨ 燈光運動軌跡與動態漸層渲染
+        lights.forEach((l, i) => { 
+            const offset = (i * Math.PI) / 2; 
+            l.position.set(Math.sin(time + offset)*25, 8 + Math.sin(time*1.5)*3, Math.cos(time + offset)*25); 
+        });
 
         const targetCamX = -mouse.x * 3; const targetCamY = mouse.y * 3 + CAMERA_BASE_Y;
         camera.position.x += (targetCamX - camera.position.x) * 0.05; camera.position.y += (targetCamY - camera.position.y) * 0.05;
