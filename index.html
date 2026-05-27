@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Juby Studio Mobile Optimized</title>
+    <title>Juby Chiu Studio</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,49 +18,50 @@
         #progress-bar { width: 200px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; overflow: hidden; }
         #progress-fill { width: 0%; height: 100%; background: #ffffff; transition: width 0.2s; }
 
-        /* ✨ 標題固定左上角 */
+        /* 左上角標題 */
         #brand {
             position: absolute; top: 25px; left: 25px; color: #ffffff;
-            font-size: 1rem; font-weight: bold; letter-spacing: 1px;
+            font-size: 1.1rem; font-weight: bold; letter-spacing: 1px;
             z-index: 10; cursor: pointer; transition: opacity 0.3s;
         }
 
-        /* ✨ 音樂按鈕固定右上角 */
+        /* 右上角音樂按鈕 (毛玻璃風格) */
         #audio-toggle {
             position: absolute; top: 20px; right: 25px;
             width: 40px; height: 40px;
             background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 50%;
             display: flex; justify-content: center; align-items: center;
-            color: #ffffff; cursor: pointer; z-index: 20;
+            color: #ffffff; cursor: pointer; z-index: 20; transition: all 0.3s ease;
         }
+        #audio-toggle:hover { background: rgba(255, 255, 255, 0.25); transform: scale(1.05); }
         #audio-toggle svg { width: 20px; height: 20px; fill: currentColor; }
 
-        /* ✨ 首頁大字母 UI */
+        /* 首頁資訊層 */
         #ui-layer {
-            position: absolute; bottom: 15%; left: 25px;
+            position: absolute; bottom: 12%; left: 25px;
             text-align: left; pointer-events: none; color: #ffffff; z-index: 5;
             transition: opacity 0.6s, transform 0.8s cubic-bezier(0.19, 1, 0.22, 1);
         }
         body.panel-open #ui-layer { transform: translateY(-100px); opacity: 0; }
-        #ui-title { font-size: 4.5rem; font-weight: 900; margin: 0; line-height: 0.85; text-transform: uppercase; }
-        #ui-subtitle { font-size: 1rem; font-weight: 700; margin: 5px 0 0 0; padding-left: 10px; border-left: 3px solid #ffffff; }
+        #ui-title { font-size: 4rem; font-weight: 900; margin: 0; line-height: 0.85; text-transform: uppercase; }
+        #ui-subtitle { font-size: 1rem; font-weight: 700; margin: 8px 0 0 0; padding-left: 10px; border-left: 3px solid #ffffff; }
 
-        /* ✨ 彈起式面板優化 */
+        /* 手機彈起式底部面板 (Bottom Sheet) */
         #glass-panel {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 90vh; 
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 85vh; 
             background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(255, 255, 255, 0.1); border-radius: 30px 30px 0 0; 
-            transform: translateY(100%); transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); 
+            border-top: 1px solid rgba(255, 255, 255, 0.15); border-radius: 30px 30px 0 0; 
+            transform: translateY(100%); transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); 
             z-index: 100; display: flex; flex-direction: column; align-items: center;
         }
-        #glass-panel.full-open { transform: translateY(0%); background: rgba(255, 255, 255, 0.15); }
+        #glass-panel.full-open { transform: translateY(0%); background: rgba(255, 255, 255, 0.18); }
 
-        .panel-handle { width: 50px; height: 5px; background: rgba(255,255,255,0.3); border-radius: 5px; margin: 15px 0 20px 0; flex-shrink: 0; }
+        .panel-handle { width: 50px; height: 5px; background: rgba(255,255,255,0.4); border-radius: 5px; margin: 15px 0 20px 0; flex-shrink: 0; cursor: pointer; }
 
         .panel-content {
             width: 100%; padding: 0 25px; box-sizing: border-box;
-            display: flex; flex-direction: column; /* 手機版改為上下排列 */
+            display: flex; flex-direction: column;
             gap: 20px; opacity: 0; transition: opacity 0.5s; height: 100%; overflow-y: auto;
         }
         #glass-panel.full-open .panel-content { opacity: 1; }
@@ -69,25 +70,31 @@
         .panel-title-text { font-size: 2.2rem; font-weight: 900; color: #ffffff; line-height: 1.1; }
 
         .panel-right { width: 100%; padding-bottom: 100px; }
-        .panel-right::-webkit-scrollbar { width: 0px; } /* 手機隱藏捲動條 */
+        .panel-right::-webkit-scrollbar { width: 4px; }
+        .panel-right::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 4px; }
 
-        .detail-text img { max-width: 100%; height: auto; border-radius: 12px; margin-bottom: 20px; display: block; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-        .detail-text h2 { font-size: 1.5rem; font-weight: 900; margin-bottom: 10px; color: #ffffff; }
-        .detail-text p { font-size: 1rem; line-height: 1.7; color: #dddddd; margin-bottom: 20px; }
+        .detail-text img { max-width: 100%; height: auto; border-radius: 12px; margin-bottom: 20px; display: block; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
+        .detail-text h2 { font-size: 1.6rem; font-weight: 900; margin: 0 0 15px 0; color: #ffffff; }
+        .detail-text p { font-size: 1rem; line-height: 1.7; color: #eeeeee; margin-bottom: 25px; }
 
-        /* ✨ 關閉按鈕 (手機版必備) */
+        /* ✕ 關閉按鈕 */
         #close-btn {
-            position: absolute; top: 20px; right: 20px; width: 30px; height: 30px;
-            color: white; font-size: 24px; display: none; z-index: 110; cursor: pointer;
+            position: absolute; top: 20px; right: 25px; width: 30px; height: 30px;
+            color: rgba(255, 255, 255, 0.7); font-size: 24px; display: none; z-index: 110; cursor: pointer;
         }
         body.panel-open #close-btn { display: block; }
 
+        /* ✨ RWD 電腦版排版還原 */
         @media (min-width: 769px) {
-            #ui-title { font-size: 6rem; }
-            .panel-content { flex-direction: row; padding: 0 60px; gap: 50px; }
+            #brand { font-size: 1.2rem; top: 30px; left: 40px; }
+            #ui-layer { left: 8%; bottom: 15%; }
+            #ui-title { font-size: 5.5rem; }
+            #ui-subtitle { font-size: 1.2rem; }
+            .panel-content { flex-direction: row; padding: 0 60px; gap: 60px; }
             .panel-left { flex: 1; padding-top: 150px; }
-            .panel-right { flex: 2; }
+            .panel-right { flex: 2.5; padding-right: 30px; }
             .panel-title-text { font-size: 3.5rem; }
+            .detail-text h2 { font-size: 2rem; }
         }
     </style>
     
@@ -145,11 +152,11 @@
     const SPACE_COLOR = '#6c5b5e';
     
     let scene, camera, renderer, carouselGroup, centerModelGroup, cardMeshes = [], projects = [];
-    let targetRotation = 0, currentRotation = 0, lastRotation = 0, rotationVelocity = 0;
+    let targetRotation = 0, currentRotation = 0, rotationVelocity = 0;
     let currentActiveIndex = -1, activeCardUUID = null, previewIndex = 0, centerModelTargetScale = 2.0;
     
     let isTouching = false, touchStartX = 0;
-    const CAMERA_BASE_Y = 18, CAMERA_BASE_Z = 70;
+    const CAMERA_BASE_Y = 16; // 💡 微調 Y 軸，不傾斜，讓圓環保持在水平正中心
     const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2(), manager = new THREE.LoadingManager();
     let lights = [], studioEnvMap;
 
@@ -160,9 +167,10 @@
         scene = new THREE.Scene(); scene.background = new THREE.Color(SPACE_COLOR); scene.fog = new THREE.Fog(SPACE_COLOR, 40, 150);
         
         const aspect = window.innerWidth / window.innerHeight;
-        camera = new THREE.PerspectiveCamera(aspect < 1 ? 45 : 35, aspect, 0.1, 500);
-        camera.position.set(0, CAMERA_BASE_Y, aspect < 1 ? 90 : 70); 
-        camera.lookAt(0, 0, 0);
+        // 💡 根據手機直向和電腦橫向，動態調整視野大小 (FOV)
+        camera = new THREE.PerspectiveCamera(aspect < 1 ? 48 : 35, aspect, 0.1, 500);
+        camera.position.set(0, CAMERA_BASE_Y, aspect < 1 ? 82 : 72); 
+        camera.lookAt(0, 4, 0); // 💡 微調看向上方，確保模型和圓環不會被下方的文字擋住
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -177,33 +185,39 @@
         if (projects.length > 0) { await preloadAllModels(); switchPreviewModel(0); }
         createCarousel();
 
-        // 事件監聽
         window.addEventListener('resize', onWindowResize);
-        window.addEventListener('wheel', (e) => { targetRotation += e.deltaY * 0.0008; });
-        
-        // 滑鼠互動
+        window.addEventListener('wheel', (e) => { if (currentActiveIndex === -1) targetRotation += e.deltaY * 0.0008; });
         window.addEventListener('mousemove', onMouseMove);
-        window.addEventListener('mousedown', () => { isTouching = true; });
+        
+        window.addEventListener('mousedown', (e) => { isTouching = true; });
         window.addEventListener('mouseup', (e) => { isTouching = false; onClick(e); });
-
-        // 觸控互動 (手機關鍵)
+        
         window.addEventListener('touchstart', onTouchStart, { passive: false });
         window.addEventListener('touchmove', onTouchMove, { passive: false });
         window.addEventListener('touchend', onTouchEnd);
 
         setupUIEvents();
-        
         document.getElementById('loader').style.opacity = 0;
         setTimeout(() => document.getElementById('loader').remove(), 500);
         animate();
     }
 
     async function fetchData() {
-        const items = ['a', 'b', 'c', 'd'];
+        const items = ['a', 'b', 'c', 'd', 'e', 'f']; 
         projects = await Promise.all(items.map(async (name, index) => {
             let desc = ""; let customTitle = name.toUpperCase();
             if (name === 'a') customTitle = "JUBY 2014";
-            try { const r = await fetch(`txts/${name}.txt?t=${Date.now()}`); if(r.ok) desc = await r.text(); } catch(e){}
+            if (name === 'c') customTitle = "JUBY DANCE";
+            
+            try { 
+                const r = await fetch(`txts/${name}.txt?t=${Date.now()}`); 
+                if(r.ok) {
+                    desc = await r.text();
+                } else {
+                    // 💡 防錯機制：如果抓不到 txt，就自動產生乾淨的預設文字，網頁就不會卡死
+                    desc = `<h2>COLLECTION ${name.toUpperCase()}</h2><p>Experience the latest creation from Juby Chiu Studio. Exploring texture, form, and futuristic design language.</p><img src="images/${name}.png" alt="preview">`;
+                }
+            } catch(e){}
             return { id: index, letter: name.toUpperCase(), title: customTitle, image: `images/${name}.png?t=${Date.now()}`, model: `models/${name}.glb`, desc: desc, sceneObject: null, normalizedScale: 1 };
         }));
     }
@@ -223,7 +237,6 @@
         const dracoLoader = new DRACOLoader();
         dracoLoader.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
         loader.setDRACOLoader(dracoLoader);
-
         for (const project of projects) {
             await new Promise(res => {
                 loader.load(project.model, (gltf) => {
@@ -245,70 +258,69 @@
         for (let i = 0; i < CARD_COUNT; i++) {
             const p = projects[i % projects.length];
             const angle = (i / CARD_COUNT) * Math.PI * 2;
-            const mesh = new THREE.Mesh(
-                new THREE.PlaneGeometry(3.6, 2.4),
-                new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.7 })
-            );
+            const mesh = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 2.4), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.7, side: THREE.DoubleSide }));
             texLoader.load(p.image, (t) => { mesh.material.map = t; mesh.material.needsUpdate = true; });
-            mesh.position.set(Math.sin(angle)*RADIUS, 0, Math.cos(angle)*RADIUS);
-            mesh.lookAt(0, 0, 0); mesh.rotateY(Math.PI / 2);
-            mesh.userData = { dataIndex: i % projects.length, originalAngle: angle, targetY: 0, currentY: 0 };
+            
+            // 💡 水平圓環公式還原，取消所有傾斜，讓後半圈乖乖繞回來
+            mesh.position.set(Math.sin(angle)*RADIUS, 4, Math.cos(angle)*RADIUS);
+            mesh.lookAt(0, 4, 0); mesh.rotateY(Math.PI / 2);
+            mesh.userData = { dataIndex: i % projects.length, originalAngle: angle, targetY: 4, currentY: 4 };
             carouselGroup.add(mesh); cardMeshes.push(mesh);
         }
     }
 
-    function onTouchStart(e) { 
-        isTouching = true; 
-        touchStartX = e.touches[0].clientX; 
-        rotationVelocity = 0; 
-    }
-
+    // ✨ 手機一指滑動與慣性輪盤滾動
+    function onTouchStart(e) { isTouching = true; touchStartX = e.touches[0].clientX; rotationVelocity = 0; }
     function onTouchMove(e) {
         if (!isTouching || currentActiveIndex !== -1) return;
         const deltaX = e.touches[0].clientX - touchStartX;
-        targetRotation += deltaX * 0.005;
+        targetRotation += deltaX * 0.007; // 💡 控制手機滑動的靈敏度
         touchStartX = e.touches[0].clientX;
         e.preventDefault();
     }
-
-    function onTouchEnd(e) { 
-        isTouching = false; 
-        if (Math.abs(rotationVelocity) < 0.001) onClick(e); 
-    }
+    function onTouchEnd(e) { isTouching = false; }
 
     function onClick(e) {
         const clientX = e.clientX || (e.changedTouches && e.changedTouches[0].clientX);
         const clientY = e.clientY || (e.changedTouches && e.changedTouches[0].clientY);
+        if(!clientX || !clientY) return;
         
         mouse.x = (clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(clientY / window.innerHeight) * 2 + 1;
         
         raycaster.setFromCamera(mouse, camera);
         const hits = raycaster.intersectObjects(cardMeshes);
-        
         if (hits.length > 0) {
             const hit = hits[0].object;
             if (currentActiveIndex === hit.userData.dataIndex) return;
             enterDetailMode(hit);
-            targetRotation = -hit.userData.originalAngle;
-        } else if (currentActiveIndex !== -1) {
-            // 點擊空白處不自動關閉，改由面板邏輯處理
+            
+            // 💡 點擊後，把點到的卡片旋轉到最前面 (正前方角度為0)
+            let targetAngle = -hit.userData.originalAngle;
+            const currentRot = currentRotation;
+            const twoPi = Math.PI * 2;
+            const cycles = Math.floor(currentRot / twoPi);
+            targetAngle += cycles * twoPi;
+            const diff = targetAngle - currentRot;
+            if (diff > Math.PI) targetAngle -= twoPi;
+            else if (diff < -Math.PI) targetAngle += twoPi;
+            targetRotation = targetAngle;
         }
     }
 
     function enterDetailMode(mesh) {
         currentActiveIndex = mesh.userData.dataIndex;
         switchPreviewModel(currentActiveIndex);
-        
         const p = projects[currentActiveIndex];
         document.getElementById('detail-panel-title').innerText = p.title;
         document.getElementById('detail-desc').innerHTML = p.desc;
         
+        // ✨ 內容從底部彈上來覆蓋
         document.getElementById('glass-panel').classList.add('full-open');
         document.body.classList.add('panel-open');
         
         activeCardUUID = mesh.uuid;
-        mesh.userData.targetY = 40; // 飛上去
+        mesh.userData.targetY = 45; // ✨ 卡片往上飛效果
     }
 
     function exitDetailMode() {
@@ -317,7 +329,7 @@
         document.body.classList.remove('panel-open');
         if (activeCardUUID) {
             const m = cardMeshes.find(c => c.uuid === activeCardUUID);
-            if (m) m.userData.targetY = 0;
+            if (m) m.userData.targetY = 4;
         }
         activeCardUUID = null;
     }
@@ -330,15 +342,14 @@
             if (proj.sceneObject) {
                 proj.sceneObject.visible = (i === idx);
                 if (i === idx) {
-                    proj.sceneObject.position.y = 1.3;
-                    centerModelTargetScale = proj.normalizedScale * (currentActiveIndex===-1 ? 2.2 : 2.8);
+                    proj.sceneObject.position.y = 4.5;
+                    centerModelTargetScale = proj.normalizedScale * (currentActiveIndex===-1 ? 2.4 : 3.0);
                 }
             }
         });
     }
 
     function setupUIEvents() {
-        // 音樂
         const btn = document.getElementById('audio-toggle');
         const audio = document.getElementById('bg-music');
         let playing = false;
@@ -349,8 +360,6 @@
             document.getElementById('icon-sound-on').style.display = playing ? 'block' : 'none';
             document.getElementById('icon-sound-off').style.display = playing ? 'none' : 'block';
         });
-
-        // 關閉面板
         document.getElementById('close-btn').addEventListener('click', exitDetailMode);
         document.querySelector('.panel-handle').addEventListener('click', exitDetailMode);
     }
@@ -363,9 +372,8 @@
 
     function onWindowResize() {
         const aspect = window.innerWidth / window.innerHeight;
-        camera.aspect = aspect;
-        camera.fov = aspect < 1 ? 45 : 35;
-        camera.position.z = aspect < 1 ? 90 : 70;
+        camera.aspect = aspect; camera.fov = aspect < 1 ? 48 : 35;
+        camera.position.z = aspect < 1 ? 82 : 72;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
     }
@@ -374,38 +382,37 @@
         requestAnimationFrame(animate);
         const time = Date.now() * 0.0002;
         
-        // 慣性滑動計算
+        // 慣性滑動阻尼感運算
         if (!isTouching) {
             rotationVelocity = (targetRotation - currentRotation) * 0.05;
             currentRotation += rotationVelocity;
         } else {
             currentRotation += (targetRotation - currentRotation) * 0.15;
         }
-
         if (carouselGroup) carouselGroup.rotation.y = currentRotation;
 
-        // 燈光與相機隨動
         lights.forEach((l, i) => {
             const offset = (i * Math.PI) / 2;
             l.position.set(Math.sin(time + offset)*25, 10 + Math.sin(time*1.5)*5, Math.cos(time + offset)*25);
         });
 
-        const targetCamX = -mouse.x * 5;
-        const targetCamY = mouse.y * 5 + CAMERA_BASE_Y;
+        // 💡 降低微動幅度，防止畫面劇烈傾斜破壞圓環形狀
+        const targetCamX = -mouse.x * 2;
+        const targetCamY = mouse.y * 2 + CAMERA_BASE_Y;
         camera.position.x += (targetCamX - camera.position.x) * 0.05;
         camera.position.y += (targetCamY - camera.position.y) * 0.05;
-        camera.lookAt(0, 0, 0);
+        camera.lookAt(0, 4, 0);
 
-        // 處理卡片動畫
         cardMeshes.forEach(m => {
             m.userData.currentY += (m.userData.targetY - m.userData.currentY) * 0.1;
             m.position.y = m.userData.currentY;
             
-            // 自動預覽邏輯 (手機版在沒打開面板時才偵測)
+            // 自動偵測正前方並顯示標題
             if (currentActiveIndex === -1) {
                 const worldPos = new THREE.Vector3();
                 m.getWorldPosition(worldPos);
-                const distToFront = worldPos.distanceTo(new THREE.Vector3(0, 0, RADIUS));
+                // 💡 計算卡片與相機正前方的距離
+                const distToFront = worldPos.distanceTo(new THREE.Vector3(0, 4, RADIUS));
                 if (distToFront < 5 && previewIndex !== m.userData.dataIndex) {
                     switchPreviewModel(m.userData.dataIndex);
                     previewIndex = m.userData.dataIndex;
@@ -414,7 +421,6 @@
             }
         });
 
-        // 處理中心模型
         projects.forEach(p => {
             if (p.sceneObject && p.sceneObject.visible) {
                 p.sceneObject.rotation.y += 0.005;
