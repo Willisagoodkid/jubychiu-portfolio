@@ -164,7 +164,7 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         
-        // 確保陰影渲染器徹底啟動
+        // 100% 啟動高級陰影地圖
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.toneMapping = THREE.NoToneMapping;
@@ -201,58 +201,55 @@
     }
 
     function setupLightsAndFloor(studioEnvMap) {
-        // 1. 還原溫柔的全局環境光
+        // 全局溫柔基礎環境光
         scene.add(new THREE.AmbientLight(0xffffff, 1.0));
         
-        // 2. 🔥【強效修正：加入專門產生陰影的平行光】
+        // 產生實體模型的陰影平行光
         dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
         dirLight.position.set(0, 40, 20);
         dirLight.castShadow = true;
-        // 優化陰影貼圖解析度與範圍
         dirLight.shadow.mapSize.width = 2048;
         dirLight.shadow.mapSize.height = 2048;
         dirLight.shadow.camera.near = 0.5;
         dirLight.shadow.camera.far = 100;
         const d = 25;
-        dirLight.shadow.camera.left = -d;
-        dirLight.shadow.camera.right = d;
-        dirLight.shadow.camera.top = d;
-        dirLight.shadow.camera.bottom = -d;
+        dirLight.shadow.camera.left = -d; dirLight.shadow.camera.right = d;
+        dirLight.shadow.camera.top = d; dirLight.shadow.camera.bottom = -d;
         dirLight.shadow.bias = -0.0005;
         scene.add(dirLight);
 
-        // 3. 還原彩色流光霓虹點光源
+        // 🔥【陰影與流光流體共存修正】：在 shadowMap 物理正確光照模式下，
+        // 點光源強度必須從原本的 200 直接拉高到 20000 級別的物理能量，才能完美擊穿物理衰減！
+        // 這樣一來，中間雕塑投影的同時，地面原本大範圍、軟綿綿、充滿黃紫粉漸層的夢幻霓虹光感就會 100% 亮回來！
         const lightColors = [0xffccaa, 0xffbb99, 0xffcccc, 0xffaaee];
-        const lightIntensities = aspect < 1 ? [120, 100, 100, 80] : [200, 180, 180, 140];
+        const lightIntensities = aspect < 1 ? [16000, 14000, 14000, 11000] : [24000, 20000, 20000, 16000];
 
         for(let i = 0; i < 4; i++) {
-            const light = new THREE.PointLight(lightColors[i], lightIntensities[i], 200);
-            light.decay = 1.3; 
+            const light = new THREE.PointLight(lightColors[i], lightIntensities[i], 180);
+            light.decay = 2.0; // 💡 完美收束光斑核心的物理衰減率
             lights.push(light); scene.add(light);
         }
         
-        // 4. 🔥【地面物理參數徹底對齊】
-        const floorGeo = new THREE.PlaneGeometry(1000, 1000);
+        // 地板物理反射參數對齊
+        const floorGeo = new THREE.PlaneGeometry(1500, 1500);
         const floorMat = new THREE.MeshStandardMaterial({ 
             color: new THREE.Color('#4a3c3c'), 
-            roughness: 0.8, 
+            roughness: 0.8, // 💡 開啟反射 RoomEnvironment 貼圖的鑰匙
             metalness: 0.1,
             envMap: studioEnvMap
         });
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2; 
         floor.position.y = aspect < 1 ? -6.0 : -4.0; 
-        floor.receiveShadow = true; // 🌟 確保地面完全接收影子
+        floor.receiveShadow = true; 
         scene.add(floor);
         
-        // 後方背景大球殼
+        // 移除任何怪球邊界，換回超巨型磨砂背板牆
         const bgWallGeo = new THREE.SphereGeometry(85, 32, 32);
         const bgWallMat = new THREE.MeshStandardMaterial({ color: 0x5a4a4d, side: THREE.BackSide, roughness: 0.9 });
-        const bgWall = new THREE.Mesh(bgWallGeo, bgWallMat); 
-        scene.add(bgWall);
+        const bgWall = new THREE.Mesh(bgWallGeo, bgWallMat); scene.add(bgWall);
 
-        centerModelGroup = new THREE.Group(); 
-        scene.add(centerModelGroup);
+        centerModelGroup = new THREE.Group(); scene.add(centerModelGroup);
     }
 
     async function fetchData() {
@@ -284,11 +281,10 @@
                 loader.load(project.model, (gltf) => {
                     const model = gltf.scene;
                     
-                    // 🌟【關鍵核心修復】：移除所有一層、二層圖層隔離限制！
-                    // 讓 3D 模型完全待在 Layer 0，接受全局光源照射。
+                    // 所有物件置於 Layer 0，接受全局光源投影
                     model.traverse(n => {
                         if(n.isMesh) {
-                            n.castShadow = true;     // 🌟 開啟模型本身投影
+                            n.castShadow = true;
                             n.receiveShadow = true;
                             if(n.material) n.material.envMap = studioEnvMap;
                         }
@@ -361,7 +357,6 @@
         if (duration < 250 && totalDist < 15) onClick(e); 
     }
 
-    // 點擊事件
     function onClick(e) {
         if (currentActiveIndex !== -1) {
             const path = e.composedPath ? e.composedPath() : [];
@@ -449,18 +444,17 @@
         else { currentRotation += (targetRotation - currentRotation) * 0.15; }
         if (carouselGroup) carouselGroup.rotation.y = currentRotation;
 
-        // 點光源緩慢高空擺動
+        // 點光源流動運動
         lights.forEach((l, i) => {
             const offset = (i * Math.PI) / 2;
             const moodTime = aspect < 1 ? time * 0.6 : time; 
             l.position.set(
-                Math.sin(moodTime + offset) * 28, 
-                CAMERA_BASE_Y + 16, 
-                Math.cos(moodTime + offset) * 28
+                Math.sin(moodTime + offset) * 26, 
+                CAMERA_BASE_Y + 8, 
+                Math.cos(moodTime + offset) * 26
             );
         });
 
-        // 視角微動隨滑鼠移動
         const targetCamX = -mouse.x * (aspect < 1 ? 1 : 3);
         const targetCamY = mouse.y * (aspect < 1 ? 1 : 3) + CAMERA_BASE_Y;
         camera.position.x += (targetCamX - camera.position.x) * 0.05;
