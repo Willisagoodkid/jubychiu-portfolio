@@ -10,10 +10,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&family=Inter:wght@900&display=swap" rel="stylesheet">
 
     <style>
-        body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background-color: #6c5b5e; font-family: 'Inter', 'Noto Sans TC', sans-serif; touch-action: none; }
+        body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background-color: #2a2022; font-family: 'Inter', 'Noto Sans TC', sans-serif; touch-action: none; }
         canvas { display: block; }
         
-        #loader { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #6c5b5e; color: #ffffff; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 999; transition: opacity 0.5s; }
+        #loader { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #2a2022; color: #ffffff; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 999; transition: opacity 0.5s; }
         #loader-text { font-size: 1.2rem; font-weight: bold; letter-spacing: 2px; margin-bottom: 15px; }
         #progress-bar { width: 200px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; overflow: hidden; }
         #progress-fill { width: 0%; height: 100%; background: #ffffff; transition: width 0.2s; }
@@ -136,17 +136,15 @@
     import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
     let RADIUS, CAMERA_BASE_Y, aspect;
-    const CARD_COUNT = 25; const SPACE_COLOR = '#6c5b5e';
+    const CARD_COUNT = 25; 
     
     let scene, camera, renderer, carouselGroup, centerModelGroup, cardMeshes = [], projects = [];
     let targetRotation = 0, currentRotation = 0, rotationVelocity = 0;
     let currentActiveIndex = -1, activeCardUUID = null, previewIndex = 0;
     
-    let isTouching = false, touchStartX = 0, touchStartY = 0, lastTouchX = 0, lastTouchY = 0, touchStartTime = 0;
+    let isTouching = false, touchStartX = 0, lastTouchX = 0;
     const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2(), manager = new THREE.LoadingManager();
-    let lights = [], dirLight, studioEnvMap;
-
-    let gyroTargetX = 0, gyroTargetY = 0, gyroCurrentX = 0, gyroCurrentY = 0, gyroEnabled = false;
+    let lights = [];
 
     init();
 
@@ -156,26 +154,26 @@
         CAMERA_BASE_Y = aspect < 1 ? 26 : 22;
 
         await fetchData();
-        scene = new THREE.Scene(); scene.background = new THREE.Color(SPACE_COLOR); scene.fog = new THREE.Fog(SPACE_COLOR, 40, 140);
+        scene = new THREE.Scene(); 
+        scene.background = new THREE.Color('#2a2022'); // 深色背景讓霓虹光更跳
+        scene.fog = new THREE.Fog('#2a2022', 40, 150);
         
         camera = new THREE.PerspectiveCamera(aspect < 1 ? 48 : 35, aspect, 0.1, 500);
         camera.position.set(0, CAMERA_BASE_Y, aspect < 1 ? 115 : 75); 
         camera.lookAt(0, aspect < 1 ? 5 : 0, 0);
 
-        camera.layers.enable(0);
-        camera.layers.enable(1);
-
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         
+        // 🌟【關鍵 1：開啟陰影，確保模型有實體影子】
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.toneMapping = THREE.NoToneMapping;
         document.body.appendChild(renderer.domElement);
 
         const pmremGenerator = new THREE.PMREMGenerator(renderer);
-        studioEnvMap = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+        const studioEnvMap = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
 
         setupLightsAndFloor(studioEnvMap);
         createCarousel();
@@ -191,12 +189,19 @@
         window.addEventListener('wheel', (e) => { if(currentActiveIndex === -1) targetRotation += e.deltaY * 0.0008; });
         window.addEventListener('mousemove', onMouseMove);
         
-        window.addEventListener('mousedown', () => { isTouching = true; });
+        // 拔除所有多餘功能，只留最純粹的拖曳旋轉
+        window.addEventListener('mousedown', (e) => { isTouching = true; lastTouchX = e.clientX; });
         window.addEventListener('mouseup', (e) => { isTouching = false; onClick(e); });
         
-        window.addEventListener('touchstart', onTouchStart, { passive: false });
-        window.addEventListener('touchmove', onTouchMove, { passive: false });
-        window.addEventListener('touchend', onTouchEnd);
+        window.addEventListener('touchstart', (e) => { isTouching = true; lastTouchX = e.touches[0].clientX; touchStartX = lastTouchX; }, { passive: false });
+        window.addEventListener('touchmove', (e) => {
+            if (!isTouching || currentActiveIndex !== -1) return;
+            const deltaX = e.touches[0].clientX - lastTouchX;
+            targetRotation += deltaX * 0.007; 
+            lastTouchX = e.touches[0].clientX;
+            e.preventDefault();
+        }, { passive: false });
+        window.addEventListener('touchend', (e) => { isTouching = false; onClick(e); });
 
         setupUIEvents();
         document.getElementById('loader').style.opacity = 0;
@@ -205,55 +210,55 @@
     }
 
     function setupLightsAndFloor(studioEnvMap) {
-        // 全局基礎環境光（壓低一點讓對比更強烈）
-        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+        // 基礎環境光
+        scene.add(new THREE.AmbientLight(0xffffff, 1.0));
         
-        // 生成模型陰影的平行光
-        dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
-        dirLight.position.set(0, 40, 20);
+        // 🌟【產生影子的平行光】
+        const dirLight = new THREE.DirectionalLight(0xfff5e6, 2.0);
+        dirLight.position.set(10, 40, 20);
         dirLight.castShadow = true;
         dirLight.shadow.mapSize.width = 2048;
         dirLight.shadow.mapSize.height = 2048;
         dirLight.shadow.camera.near = 0.5;
         dirLight.shadow.camera.far = 100;
-        const d = 25;
-        dirLight.shadow.camera.left = -d; dirLight.shadow.camera.right = d;
-        dirLight.shadow.camera.top = d; dirLight.shadow.camera.bottom = -d;
-        dirLight.shadow.bias = -0.0005;
+        dirLight.shadow.camera.left = -25; dirLight.shadow.camera.right = 25;
+        dirLight.shadow.camera.top = 25; dirLight.shadow.camera.bottom = -25;
+        dirLight.shadow.bias = -0.001;
         scene.add(dirLight);
 
-        // 🔥【貼地爆發核心 1】：提高光強，縮小照射距離（150），讓光速衰減聚焦
+        // 🔥【關鍵 2：擊穿物理衰減的狂暴霓虹光源】
+        // 在 shadowMap 模式下，強度必須是 30000 級別，才能在地面炸出漂亮的漸層色！
         const lightColors = [0xffccaa, 0xffbb99, 0xffcccc, 0xffaaee];
-        const lightIntensities = aspect < 1 ? [2000, 1800, 1800, 1500] : [3000, 2600, 2600, 2000];
+        const lightIntensities = aspect < 1 ? [20000, 20000, 20000, 20000] : [30000, 30000, 30000, 30000];
 
         for(let i = 0; i < 4; i++) {
-            const light = new THREE.PointLight(lightColors[i], lightIntensities[i], 150);
-            light.decay = 1.8; // 適度衰減，創造中心亮、外圍糊的質感
-            lights.push(light); scene.add(light);
+            const light = new THREE.PointLight(lightColors[i], lightIntensities[i], 0, 2); // decay: 2 為物理正確衰減
+            lights.push(light); 
+            scene.add(light);
         }
         
-        // 🔥【貼地爆發核心 2】：緞面材質地板，找回高對比光斑與流動感
-        // 將 roughness 從極致霧面降到 0.6，金屬度提升到 0.2。
-        // 這樣地面就不再是死灰的漫反射板，而是會漂亮地映照出點光源的軌跡，充滿流動感！
+        // 🔥【關鍵 3：會接影子、又會反光的深色緞面地板】
         const floorGeo = new THREE.PlaneGeometry(1500, 1500);
         const floorMat = new THREE.MeshStandardMaterial({ 
-            color: new THREE.Color('#46383a'), 
-            roughness: 0.6, 
-            metalness: 0.2,
+            color: new THREE.Color('#332628'), // 壓深底色，讓霓虹光斑對比跳出來
+            roughness: 0.65, // 降低粗糙度，讓光不會完全散掉，保留流動的光暈中心
+            metalness: 0.15,
             envMap: studioEnvMap
         });
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2; 
         floor.position.y = aspect < 1 ? -6.0 : -4.0; 
-        floor.receiveShadow = true; 
+        floor.receiveShadow = true; // 🌟 接收影子！
         scene.add(floor);
         
-        // 背景大球殼：消除邊界
-        const bgWallGeo = new THREE.SphereGeometry(85, 32, 32);
-        const bgWallMat = new THREE.MeshStandardMaterial({ color: 0x5a4a4d, side: THREE.BackSide, roughness: 0.9 });
-        const bgWall = new THREE.Mesh(bgWallGeo, bgWallMat); scene.add(bgWall);
+        // 背景大球殼（無接縫防護罩）
+        const bgWallGeo = new THREE.SphereGeometry(100, 32, 32);
+        const bgWallMat = new THREE.MeshStandardMaterial({ color: 0x4a3c3c, side: THREE.BackSide, roughness: 1.0 });
+        const bgWall = new THREE.Mesh(bgWallGeo, bgWallMat); 
+        scene.add(bgWall);
 
-        centerModelGroup = new THREE.Group(); scene.add(centerModelGroup);
+        centerModelGroup = new THREE.Group(); 
+        scene.add(centerModelGroup);
     }
 
     async function fetchData() {
@@ -285,7 +290,7 @@
                 loader.load(project.model, (gltf) => {
                     const model = gltf.scene;
                     
-                    // 所有物件置於 Layer 0，接受全局光源投影
+                    // 確保模型接受光源並產生影子
                     model.traverse(n => {
                         if(n.isMesh) {
                             n.castShadow = true;
@@ -319,12 +324,13 @@
             const p = projects[i % projects.length];
             const angle = (i / CARD_COUNT) * Math.PI * 2;
             
+            // 卡片防光害，保持原色
             const mesh = new THREE.Mesh(
                 new THREE.PlaneGeometry(3.6, 2.4), 
                 new THREE.MeshBasicMaterial({ 
                     color: 0xffffff, 
                     transparent: true, 
-                    opacity: 0.75, 
+                    opacity: 0.8, 
                     side: THREE.DoubleSide
                 })
             );
@@ -337,55 +343,7 @@
         }
     }
 
-    function triggerNaturalGyro() {
-        if (gyroEnabled) return;
-        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-            DeviceOrientationEvent.requestPermission()
-                .then(state => { if (state === 'granted') { window.addEventListener('deviceorientation', handleOrientation); gyroEnabled = true; } })
-                .catch(console.error);
-        } else {
-            window.addEventListener('deviceorientation', handleOrientation);
-            gyroEnabled = true;
-        }
-    }
-
-    function handleOrientation(event) {
-        if (currentActiveIndex !== -1) return;
-        const beta = event.beta; const gamma = event.gamma;
-        if (beta && gamma) {
-            gyroTargetX = (gamma / 30) * 1.8; 
-            gyroTargetY = ((beta - 45) / 30) * 1.8; 
-        }
-    }
-
-    function onTouchStart(e) { 
-        triggerNaturalGyro(); 
-        isTouching = true; 
-        touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
-        lastTouchX = touchStartX; lastTouchY = touchStartY;
-        touchStartTime = Date.now(); rotationVelocity = 0; 
-    }
-
-    function onTouchMove(e) {
-        if (!isTouching || currentActiveIndex !== -1) return;
-        const currentX = e.touches[0].clientX; const currentY = e.touches[0].clientY;
-        const deltaX = currentX - lastTouchX; const deltaY = currentY - lastTouchY;
-        
-        targetRotation += deltaX * 0.007 + deltaY * 0.004; 
-        lastTouchX = currentX; lastTouchY = currentY;
-        e.preventDefault();
-    }
-
-    function onTouchEnd(e) { 
-        isTouching = false; 
-        const duration = Date.now() - touchStartTime;
-        const totalDist = Math.sqrt(Math.pow(lastTouchX - touchStartX, 2) + Math.pow(lastTouchY - touchStartY, 2));
-        if (duration < 250 && totalDist < 15) onClick(e); 
-    }
-
     function onClick(e) {
-        triggerNaturalGyro();
-
         if (currentActiveIndex !== -1) {
             const path = e.composedPath ? e.composedPath() : [];
             const clickedOnContent = path.some(el => el.classList && el.classList.contains('panel-content'));
@@ -393,7 +351,10 @@
             return;
         }
 
-        const clientX = e.clientX || lastTouchX; const clientY = e.clientY || lastTouchY;
+        const clientX = e.clientX || (e.changedTouches && e.changedTouches[0].clientX); 
+        const clientY = e.clientY || (e.changedTouches && e.changedTouches[0].clientY);
+        if(!clientX || !clientY) return;
+
         mouse.x = (clientX / window.innerWidth) * 2 - 1; mouse.y = -(clientY / window.innerHeight) * 2 + 1;
         
         raycaster.setFromCamera(mouse, camera);
@@ -466,28 +427,26 @@
 
     function animate() {
         requestAnimationFrame(animate);
-        const time = Date.now() * 0.0004; // ✨ 提高時間乘數，讓流光速度變快、更活潑
+        const time = Date.now() * 0.0002;
         
         if (!isTouching) { rotationVelocity = (targetRotation - currentRotation) * 0.05; currentRotation += rotationVelocity; } 
         else { currentRotation += (targetRotation - currentRotation) * 0.15; }
         if (carouselGroup) carouselGroup.rotation.y = currentRotation;
 
-        // 🔥【貼地爆發核心 3】：光源高度壓低，貼近地面穿梭
+        // 🔥【關鍵 4：讓狂暴光源貼地飛行】
+        // 高度降到 2 (離地板只有幾公分的距離)，這會在地面上刷出極度漂亮、流動的高對比色塊！
         lights.forEach((l, i) => {
             const offset = (i * Math.PI) / 2;
-            // 將高度從 CAMERA_BASE_Y + 18 壓低到 CAMERA_BASE_Y - 4，並縮小環繞半徑 (18)
+            const moodTime = time * 0.8; 
             l.position.set(
-                Math.sin(time + offset) * 18, 
-                CAMERA_BASE_Y - 4, 
-                Math.cos(time + offset) * 18
+                Math.sin(moodTime + offset) * 22, 
+                2, // 💡 貼地！
+                Math.cos(moodTime + offset) * 22
             );
         });
 
-        gyroCurrentX += (gyroTargetX - gyroCurrentX) * 0.05;
-        gyroCurrentY += (gyroTargetY - gyroCurrentY) * 0.05;
-
-        const targetCamX = -mouse.x * (aspect < 1 ? 1 : 3) + gyroCurrentX;
-        const targetCamY = mouse.y * (aspect < 1 ? 1 : 3) + CAMERA_BASE_Y + gyroCurrentY;
+        const targetCamX = -mouse.x * (aspect < 1 ? 1 : 3);
+        const targetCamY = mouse.y * (aspect < 1 ? 1 : 3) + CAMERA_BASE_Y;
         camera.position.x += (targetCamX - camera.position.x) * 0.05;
         camera.position.y += (targetCamY - camera.position.y) * 0.05;
         camera.lookAt(0, aspect < 1 ? 5 : 0, 0);
