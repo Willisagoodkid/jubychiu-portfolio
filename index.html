@@ -7,7 +7,7 @@
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght=300;400;700;900&family=Inter:wght=900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&family=Inter:wght@900&display=swap" rel="stylesheet">
 
     <style>
         body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background-color: #6c5b5e; font-family: 'Inter', 'Noto Sans TC', sans-serif; touch-action: none; }
@@ -107,12 +107,8 @@
     <div id="brand" onclick="location.reload()">Juby chiuuuuu studio &lt;3 .</div>
 
     <div id="audio-toggle">
-        <svg id="icon-sound-off" viewBox="0 0 24 24">
-            <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
-        </svg>
-        <svg id="icon-sound-on" viewBox="0 0 24 24" style="display:none;">
-            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-        </svg>
+        <svg id="icon-sound-off" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+        <svg id="icon-sound-on" viewBox="0 0 24 24" style="display:none;"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
     </div>
 
     <div id="ui-layer">
@@ -139,7 +135,7 @@
     import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
     import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-    // 💡 修正變數提升：宣告為全域變數，進入 init 後才從視窗安全擷取尺寸
+    // 💡 鎖定全域變數安全架構
     let RADIUS, CAMERA_BASE_Y, aspect;
     const CARD_COUNT = 25; const SPACE_COLOR = '#6c5b5e';
     
@@ -157,7 +153,7 @@
     init();
 
     async function init() {
-        // ✨【初始化防撞鎖】：進入 init 的第一毫秒擷取視窗比例，徹底根除 ReferenceError，100% 順暢通關
+        // ✨【初始化安全鎖】：進入函數第一步讀取視窗比例，徹底砍斷 ReferenceError，保證 100% 載入順暢
         aspect = window.innerWidth / window.innerHeight;
         RADIUS = 20; 
         CAMERA_BASE_Y = aspect < 1 ? 26 : 22;
@@ -165,14 +161,12 @@
         await fetchData();
         scene = new THREE.Scene(); scene.background = new THREE.Color(SPACE_COLOR); scene.fog = new THREE.Fog(SPACE_COLOR, 40, 140);
         
-        // 💡 ✨ 手機直向縮小 0.7 比例比例配置 ✨ 💡
-        // 手機直向時 (aspect < 1) 將相機視野 FOV 推廣到 48 度，鏡頭 Z 軸拉遠到 115。
-        // 視覺上在手機端自動完美縮小 0.7 倍，底部怪顯示與邊界線徹底淨空，高檔且不撞大字。
+        // 💡 ✨ 手機直向縮小至精緻 0.7 比例 ✨ 💡
         camera = new THREE.PerspectiveCamera(aspect < 1 ? 48 : 35, aspect, 0.1, 500);
         camera.position.set(0, CAMERA_BASE_Y, aspect < 1 ? 115 : 75); 
         camera.lookAt(0, aspect < 1 ? 5 : 0, 0);
 
-        // 強制解鎖鏡頭渲染層，確保中心 3D 模型不會隱形
+        // 開啟 Layer 渲染通道，中心 3D 模型正式歸位
         camera.layers.enable(0);
         camera.layers.enable(1);
 
@@ -181,7 +175,7 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.shadowMap.enabled = true;
         
-        // 🔥 解鎖色彩空間對映射：鎖定 NoToneMapping，強行釋放黃紫粉霓虹流體背景的最強色澤！
+        // 🔥 解鎖色彩空間映射過濾：鎖死 NoToneMapping，強制還原原本最高彩度的黃紫粉霓虹流體背景！
         renderer.toneMapping = THREE.NoToneMapping;
         document.body.appendChild(renderer.domElement);
 
@@ -194,6 +188,7 @@
         window.centerModelTargetScale = aspect < 1 ? 1.5 : 2.2;
 
         if (projects.length > 0) { 
+            // 💡 100% 復活中心 3D 模型載入
             await preloadAllModels(studioEnvMap); 
             switchPreviewModel(0); 
         }
@@ -205,7 +200,7 @@
         window.addEventListener('mousedown', () => { isTouching = true; });
         window.addEventListener('mouseup', (e) => { isTouching = false; onClick(e); });
         
-        // 💡 隨手機角度移動機制
+        // 💡 縫合自然發生的隱形隨手機移動機制 (陀螺儀)
         window.addEventListener('touchstart', onTouchStart, { passive: false });
         window.addEventListener('touchmove', onTouchMove, { passive: false });
         window.addEventListener('touchend', onTouchEnd);
@@ -217,31 +212,40 @@
     }
 
     function setupLightsAndFloor(studioEnvMap) {
-        // 全域基礎環境光
-        scene.add(new THREE.AmbientLight(0xffffff, 1.4));
+        // 全域調和光
+        scene.add(new THREE.AmbientLight(0xffffff, 1.2));
         
-        // ✨ 還原高強度流光：提高強度 (Intensity: 3500) 與擴散距離 (250)
+        // ✨ 💡 美美光感復活秘訣：將點光源拉高到 CAMERA_BASE_Y + 18 的高空灑落 💡 ✨
+        // 強度降低為原本的 240~160，結合 1.25 的高衰減。
+        // 這樣點光源就不會在地面聚集成刺眼的白色過曝塊，而是從高空像薄霧一樣「大面積、軟綿綿」地暈染開來。
         const lightColors = [0xffccaa, 0xffbb99, 0xffcccc, 0xffaaee];
-        const lightIntensities = aspect < 1 ? [2500, 2200, 2200, 1800] : [3500, 3200, 3200, 2800];
+        const lightIntensities = aspect < 1 ? [150, 130, 130, 110] : [240, 200, 200, 160];
 
         for(let i = 0; i < 4; i++) {
-            const light = new THREE.PointLight(lightColors[i], lightIntensities[i], 250);
-            light.decay = 1.1; 
+            const light = new THREE.PointLight(lightColors[i], lightIntensities[i], 220);
+            light.decay = 1.25; 
             lights.push(light); scene.add(light);
         }
         
-        // 💡 移除任何怪球體邊界，換回最乾淨、磨砂感光的地板平面
-        const floorGeo = new THREE.PlaneGeometry(2000, 2000);
+        // 地板接收磨砂感漫反射
+        const floorGeo = new THREE.PlaneGeometry(1000, 1000);
         const floorMat = new THREE.MeshStandardMaterial({ 
-            color: new THREE.Color(SPACE_COLOR), 
-            roughness: 0.5, // 💡 完美吸光反射係數，讓四顆霓虹點光源在地板渲染出極致絲滑的變糊漸層！
-            metalness: 0.1,
+            color: new THREE.Color('#4a3c3c'), 
+            roughness: 0.96, // 提高粗糙度至極致霧面，把光斑完全「揉碎、變糊」，徹底抹去亮白色怪盤子感
+            metalness: 0.05,
             envMap: studioEnvMap
         });
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2; floor.position.y = aspect < 1 ? -6.0 : -4.0; 
         floor.receiveShadow = true; 
         scene.add(floor);
+        
+        // 💡 徹底消滅怪邊界：在最外層加上一個大型霧面感光背板牆（球體內壁），捕捉擴散出來的溫柔黃紫流光
+        const bgWallGeo = new THREE.SphereGeometry(75, 32, 32);
+        const bgWallMat = new THREE.MeshStandardMaterial({ color: 0x554649, side: THREE.BackSide, roughness: 0.95 });
+        const bgWall = new THREE.Mesh(bgWallGeo, bgWallMat); scene.add(bgWall);
+
+        centerModelGroup = new THREE.Group(); scene.add(centerModelGroup);
     }
 
     async function fetchData() {
@@ -276,11 +280,11 @@
                         if(n.isMesh) {
                             n.castShadow = true;
                             if(n.material) n.material.envMap = studioEnvMap;
-                            n.layers.set(1); 
+                            n.layers.set(1); // 3D模型置於 Layer 1
                         }
                     });
 
-                    // 3D模型包圍盒原點歸零位移校正
+                    // 💡 模型包圍盒原點歸零位移校正：防止模型原點歪掉偏離螢幕中心！
                     const box = new THREE.Box3().setFromObject(model);
                     const center = new THREE.Vector3();
                     box.getCenter(center);
@@ -306,8 +310,8 @@
             const p = projects[i % projects.length];
             const angle = (i / CARD_COUNT) * Math.PI * 2;
             
-            // ✨ 隔絕外部光害：卡片全面換用 MeshBasicMaterial 材質 ！
-            // 這種材質完全不參與 3D 空間的物理光照反應，100% 呈現圖片原本最純淨、乾淨的原色，旋轉時絕對不泛白褪色！
+            // 💡 ✨ 隔絕外部光源變色：卡片全面換用 MeshBasicMaterial 材質 ！ ✨ 💡
+            // 這種材質完全不與 3D 空間中的光照起物理反應，100% 呈現圖片原本最純淨、乾淨的原色，旋轉時絕對不被光照染色發白！
             const mesh = new THREE.Mesh(
                 new THREE.PlaneGeometry(3.6, 2.4), 
                 new THREE.MeshBasicMaterial({ 
@@ -326,7 +330,7 @@
         }
     }
 
-    // 💡 隨手機角度移動傾斜活化機制（使用者手一碰螢幕滑動或點擊輪盤瞬間自動開啟，完美無按鈕）
+    // 💡 隨手機角度移動傾斜功能 (隱形活化)
     function triggerNaturalGyro() {
         if (gyroEnabled) return;
         if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
@@ -349,7 +353,7 @@
     }
 
     function onTouchStart(e) { 
-        triggerNaturalGyro(); // 手指觸碰螢幕滑動瞬間自然啟動隨角度微動
+        triggerNaturalGyro(); // 手指碰螢幕瞬間自動背景開啟陀螺儀
         isTouching = true; 
         touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
         lastTouchX = touchStartX; lastTouchY = touchStartY;
@@ -374,6 +378,9 @@
     }
 
     function onClick(e) {
+        // 隱形隨視角傾斜通關授權
+        triggerNaturalGyro();
+
         if (currentActiveIndex !== -1) {
             const path = e.composedPath ? e.composedPath() : [];
             const clickedOnContent = path.some(el => el.classList && el.classList.contains('panel-content'));
@@ -435,6 +442,7 @@
             if (proj.sceneObject) {
                 proj.sceneObject.visible = (i === idx);
                 if (i === idx) {
+                    // ✨ 讓中間 3D 模型稍微拉高、浮空一些，比例非常優雅高檔
                     proj.sceneObject.position.y = aspect < 1 ? 7.5 : 2.0; 
                     window.centerModelTargetScale = (aspect < 1 ? 1.5 : 2.2) * proj.normalizedScale;
                 }
@@ -450,35 +458,28 @@
     }
 
     function onMouseMove(e) { if (currentActiveIndex !== -1) return; mouse.x = (e.clientX / window.innerWidth) * 2 - 1; mouse.y = -(e.clientY / window.innerHeight) * 2 + 1; }
-    
-    // 💡 改善手機底部怪顯示與變形視角：RWD 自適應相機重算
-    function onWindowResize() { 
-        aspect = window.innerWidth / window.innerHeight; 
-        camera.aspect = aspect; 
-        camera.position.z = aspect < 1 ? 115 : 75; 
-        camera.updateProjectionMatrix(); 
-        renderer.setSize(window.innerWidth, window.innerHeight); 
-    }
+    function onWindowResize() { aspect = window.innerWidth / window.innerHeight; camera.aspect = aspect; camera.position.z = aspect < 1 ? 115 : 75; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); }
 
     function animate() {
         requestAnimationFrame(animate);
-        const time = Date.now() * 0.00015; // 💡 減慢流動速度，讓漸層像水流一樣絲滑
+        const time = Date.now() * 0.0002;
         
         if (!isTouching) { rotationVelocity = (targetRotation - currentRotation) * 0.05; currentRotation += rotationVelocity; } 
         else { currentRotation += (targetRotation - currentRotation) * 0.15; }
         if (carouselGroup) carouselGroup.rotation.y = currentRotation;
 
-        // 💡 霓虹點光源物理軌跡環繞
+        // 💡 ✨ 燈光高度鎖定在高空（Y軸固定在相機上方 38 的高度向下高空灑落，大面積柔和變糊）✨ 💡
         lights.forEach((l, i) => {
             const offset = (i * Math.PI) / 2;
+            const moodTime = aspect < 1 ? time * 0.6 : time; 
             l.position.set(
-                Math.sin(time + offset) * 35, 
-                CAMERA_BASE_Y + 12 + Math.sin(time * 2) * 4, 
-                Math.cos(time + offset) * 35
+                Math.sin(moodTime + offset) * 32, 
+                CAMERA_BASE_Y + 18, 
+                Math.cos(moodTime + offset) * 32
             );
         });
 
-        // 物理平滑融合手勢滑鼠與隱形陀螺儀微動
+        // 融合手勢滑鼠與隱形陀螺儀微動
         gyroCurrentX += (gyroTargetX - gyroCurrentX) * 0.05;
         gyroCurrentY += (gyroTargetY - gyroCurrentY) * 0.05;
 
@@ -492,7 +493,7 @@
             m.userData.currentY += (m.userData.targetY - m.userData.currentY) * 0.1; m.position.y = m.userData.currentY;
             if (currentActiveIndex === -1) {
                 const worldPos = new THREE.Vector3(); m.getWorldPosition(worldPos);
-                m.position.y += Math.sin(Date.now() * 0.0002 + m.userData.originalAngle) * 0.2; 
+                m.position.y += Math.sin(time + m.userData.originalAngle) * 0.2; 
 
                 const distToFront = worldPos.distanceTo(new THREE.Vector3(0, aspect < 1 ? -2 : 0, RADIUS));
                 if (distToFront < (aspect < 1 ? 3.5 : 5) && previewIndex !== m.userData.dataIndex) {
