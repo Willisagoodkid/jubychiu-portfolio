@@ -135,7 +135,6 @@
     import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
     import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-    // 💡 宣告變數，於 init 內部擷取視窗比例，徹底根除 ReferenceError
     let RADIUS, CAMERA_BASE_Y, aspect;
     const CARD_COUNT = 25; const SPACE_COLOR = '#6c5b5e';
     
@@ -147,7 +146,6 @@
     const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2(), manager = new THREE.LoadingManager();
     let lights = [], studioEnvMap;
 
-    // 隨手機角度傾斜控制變數
     let gyroTargetX = 0, gyroTargetY = 0, gyroCurrentX = 0, gyroCurrentY = 0, gyroEnabled = false;
 
     init();
@@ -160,12 +158,11 @@
         await fetchData();
         scene = new THREE.Scene(); scene.background = new THREE.Color(SPACE_COLOR); scene.fog = new THREE.Fog(SPACE_COLOR, 40, 140);
         
-        // 💡 手機直向內縮 0.7 比例配置
+        // 💡 手機直向內縮 0.7 比例自適應配置
         camera = new THREE.PerspectiveCamera(aspect < 1 ? 48 : 35, aspect, 0.1, 500);
         camera.position.set(0, CAMERA_BASE_Y, aspect < 1 ? 115 : 75); 
         camera.lookAt(0, aspect < 1 ? 5 : 0, 0);
 
-        // 開啟 Layer 渲染通道，防堵中心模型隱形
         camera.layers.enable(0);
         camera.layers.enable(1);
 
@@ -174,7 +171,7 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.shadowMap.enabled = true;
         
-        // 🔥 鎖定 NoToneMapping，強制還原黃紫粉霓虹流體漸層背景的最強色澤！
+        // 🔥 鎖定 NoToneMapping，釋放黃紫流體背景色澤
         renderer.toneMapping = THREE.NoToneMapping;
         document.body.appendChild(renderer.domElement);
 
@@ -210,12 +207,12 @@
     }
 
     function setupLightsAndFloor(studioEnvMap) {
-        // 全域調和光
-        scene.add(new THREE.AmbientLight(0xffffff, 1.4));
+        // ✨【關鍵手術 1】降低全域環境光：從 1.4 大幅降低至 0.6，瞬間壓低場景死白
+        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
         
-        // ✨ 💡 美美光感復活：將彩色點光源強度拉高，並固定在相機上方高空向下照 💡 ✨
+        // ✨【關鍵手術 2】微調點光源強度：將強度（Intensity）重新修正為適中數值，高空向下投影
         const lightColors = [0xffccaa, 0xffbb99, 0xffcccc, 0xffaaee];
-        const lightIntensities = aspect < 1 ? [1800, 1500, 1500, 1200] : [2600, 2200, 2200, 1800];
+        const lightIntensities = aspect < 1 ? [1200, 1000, 1000, 800] : [1800, 1500, 1500, 1200];
 
         for(let i = 0; i < 4; i++) {
             const light = new THREE.PointLight(lightColors[i], lightIntensities[i], 240);
@@ -223,11 +220,12 @@
             lights.push(light); scene.add(light);
         }
         
-        // 💡 地板粗糙度調至完美能吸光反彈色彩的 0.72 緞面比例，找回大片大片糊化變糊的粉紫黃橙流光
+        // ✨【關鍵手術 3】提升地板磨砂感（roughness: 0.94）：
+        // 把強烈反光完全「揉碎、變糊」，讓亮白色的怪帶子徹底擴散、轉化為高級的低對比霓虹暈染
         const floorGeo = new THREE.PlaneGeometry(1500, 1500);
         const floorMat = new THREE.MeshStandardMaterial({ 
-            color: new THREE.Color('#504245'), 
-            roughness: 0.72, 
+            color: new THREE.Color('#44383a'), 
+            roughness: 0.94, 
             metalness: 0.1,
             envMap: studioEnvMap
         });
@@ -236,9 +234,9 @@
         floor.receiveShadow = true; 
         scene.add(floor);
         
-        // 巨型背景牆，無縫抓取背景彩色漸層
+        // 巨型感光背景牆，完美捕捉高空灑落的漸層
         const bgWallGeo = new THREE.SphereGeometry(85, 32, 32);
-        const bgWallMat = new THREE.MeshStandardMaterial({ color: 0x5a4a4d, side: THREE.BackSide, roughness: 0.9 });
+        const bgWallMat = new THREE.MeshStandardMaterial({ color: 0x554649, side: THREE.BackSide, roughness: 0.95 });
         const bgWall = new THREE.Mesh(bgWallGeo, bgWallMat); scene.add(bgWall);
 
         centerModelGroup = new THREE.Group(); scene.add(centerModelGroup);
@@ -305,8 +303,7 @@
             const p = projects[i % projects.length];
             const angle = (i / CARD_COUNT) * Math.PI * 2;
             
-            // 💡 隔絕外部光源變色：卡片全面維持 MeshBasicMaterial 材質 ！ 
-            // 轉動時保持最純淨的原色，絕不褪色變白！
+            // 💡 隔絕外部光源變色：卡片全面維持 MeshBasicMaterial 材質 ！
             const mesh = new THREE.Mesh(
                 new THREE.PlaneGeometry(3.6, 2.4), 
                 new THREE.MeshBasicMaterial({ 
@@ -460,7 +457,7 @@
         else { currentRotation += (targetRotation - currentRotation) * 0.15; }
         if (carouselGroup) carouselGroup.rotation.y = currentRotation;
 
-        // 💡 ✨ 點光源高度鎖定在高空向下灑落，大面積均勻暈染開來 ✨ 💡
+        // ✨ 💡 點光源高度鎖定在高空向下灑落，配合高粗糙度地板大面積變糊暈染 ✨ 💡
         lights.forEach((l, i) => {
             const offset = (i * Math.PI) / 2;
             const moodTime = aspect < 1 ? time * 0.6 : time; 
