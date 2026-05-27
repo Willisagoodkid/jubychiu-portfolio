@@ -4,11 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Juby chiuuuuu studio <3 .</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&family=Inter:wght@900&display=swap" rel="stylesheet">
+
     <style>
         body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background-color: #6c5b5e; font-family: sans-serif; touch-action: none; }
         canvas { display: block; }
         #loader { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #6c5b5e; display: flex; justify-content: center; align-items: center; color: white; z-index: 999; }
     </style>
+</head>
+<body>
+    <div id="loader">LOADING...</div>
     <script type="importmap">
     {
         "imports": {
@@ -17,79 +25,91 @@
         }
     }
     </script>
-</head>
-<body>
-    <div id="loader">LOADING...</div>
     <script type="module">
         import * as THREE from 'three';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x6c5b5e);
-        const aspect = window.innerWidth / window.innerHeight;
-        const camera = new THREE.PerspectiveCamera(aspect < 1 ? 48 : 35, aspect, 0.1, 500);
-        camera.position.set(0, 22, aspect < 1 ? 110 : 75);
-        camera.lookAt(0, 0, 0);
+        let scene, camera, renderer, carouselGroup, centerGroup, cardMeshes = [], projects = [];
+        let targetRotation = 0, currentRotation = 0;
+        let isTouching = false, lastX = 0;
+        
+        async function init() {
+            // 修正變數初始化順序，徹底解決 ReferenceError
+            const aspect = window.innerWidth / window.innerHeight;
+            
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x6c5b5e);
+            
+            camera = new THREE.PerspectiveCamera(aspect < 1 ? 48 : 35, aspect, 0.1, 500);
+            camera.position.set(0, 22, aspect < 1 ? 95 : 75);
+            camera.lookAt(0, 0, 0);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.toneMapping = THREE.NoToneMapping;
-        document.body.appendChild(renderer.domElement);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.toneMapping = THREE.NoToneMapping;
+            document.body.appendChild(renderer.domElement);
 
-        // 1. 環境光
-        scene.add(new THREE.AmbientLight(0xffffff, 1.8));
-        const colors = [0xffccaa, 0xffbb99, 0xffcccc, 0xffaaee];
-        const lights = [];
-        for(let i=0; i<4; i++) {
-            const l = new THREE.PointLight(colors[i], 3000, 200);
-            lights.push(l); scene.add(l);
-        }
-
-        // 2. 霓虹背景球
-        const bg = new THREE.Mesh(new THREE.SphereGeometry(70, 32, 32), new THREE.MeshStandardMaterial({color: 0x554649, side: THREE.BackSide, roughness: 0.95}));
-        scene.add(bg);
-
-        // 3. 模型載入 (中心對齊歸零)
-        const centerGroup = new THREE.Group();
-        scene.add(centerGroup);
-        const loader = new GLTFLoader();
-        const draco = new DRACOLoader().setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
-        loader.setDRACOLoader(draco);
-
-        ['a','b','c','d'].forEach(name => {
-            loader.load(`models/${name}.glb`, (gltf) => {
-                const model = gltf.scene;
-                const box = new THREE.Box3().setFromObject(model);
-                const center = new THREE.Vector3(); box.getCenter(center);
-                model.position.sub(center); // 關鍵位移歸零
-                model.visible = false;
-                centerGroup.add(model);
-                model.userData.name = name;
+            // 環境光 + 霓虹燈
+            scene.add(new THREE.AmbientLight(0xffffff, 1.8));
+            const colors = [0xffccaa, 0xffbb99, 0xffcccc, 0xffaaee];
+            colors.forEach(c => {
+                const l = new THREE.PointLight(c, 3000, 200);
+                l.position.set(Math.random()*40-20, 38, Math.random()*40-20);
+                scene.add(l);
             });
-        });
 
-        // 4. 輪盤
-        const carousel = new THREE.Group();
-        scene.add(carousel);
-        const tex = new THREE.TextureLoader();
-        for(let i=0; i<20; i++) {
-            const mesh = new THREE.Mesh(new THREE.PlaneGeometry(3, 2), new THREE.MeshBasicMaterial({transparent: true, opacity: 0.7, side: THREE.DoubleSide}));
-            tex.load(`images/${['a','b','c','d'][i%4]}.png`, t => mesh.material.map = t);
-            const angle = (i/20) * Math.PI * 2;
-            mesh.position.set(Math.sin(angle)*20, 0, Math.cos(angle)*20);
-            mesh.lookAt(0,0,0);
-            carousel.add(mesh);
+            // 霓虹背景牆
+            scene.add(new THREE.Mesh(new THREE.SphereGeometry(80, 32, 32), new THREE.MeshStandardMaterial({color: 0x554649, side: THREE.BackSide, roughness: 0.95})));
+
+            centerGroup = new THREE.Group();
+            scene.add(centerGroup);
+
+            // 輪盤
+            carouselGroup = new THREE.Group();
+            scene.add(carouselGroup);
+            const tex = new THREE.TextureLoader();
+            for(let i=0; i<20; i++) {
+                const mesh = new THREE.Mesh(new THREE.PlaneGeometry(3, 2), new THREE.MeshBasicMaterial({transparent: true, opacity: 0.8, side: THREE.DoubleSide}));
+                tex.load(`images/${['a','b','c','d'][i%4]}.png`, t => mesh.material.map = t);
+                const angle = (i/20) * Math.PI * 2;
+                mesh.position.set(Math.sin(angle)*18, 0, Math.cos(angle)*18);
+                mesh.lookAt(0,0,0);
+                carouselGroup.add(mesh);
+            }
+
+            // 模型載入
+            const loader = new GLTFLoader();
+            const draco = new DRACOLoader().setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
+            loader.setDRACOLoader(draco);
+            
+            ['a','b','c','d'].forEach(name => {
+                loader.load(`models/${name}.glb`, (gltf) => {
+                    const m = gltf.scene;
+                    const box = new THREE.Box3().setFromObject(m);
+                    const center = new THREE.Vector3(); box.getCenter(center);
+                    m.position.sub(center); 
+                    m.visible = false;
+                    m.userData.name = name;
+                    centerGroup.add(m);
+                });
+            });
+
+            window.addEventListener('touchstart', e => { isTouching = true; lastX = e.touches[0].clientX; });
+            window.addEventListener('touchmove', e => { if(isTouching) { targetRotation += (e.touches[0].clientX - lastX) * 0.005; lastX = e.touches[0].clientX; } });
+            window.addEventListener('touchend', () => isTouching = false);
+
+            document.getElementById('loader').style.display = 'none';
+            animate();
         }
 
         function animate() {
             requestAnimationFrame(animate);
-            carousel.rotation.y += 0.005;
-            lights.forEach((l,i) => l.position.set(Math.sin(Date.now()*0.0005+i)*25, 38, Math.cos(Date.now()*0.0005+i)*25));
+            currentRotation += (targetRotation - currentRotation) * 0.1;
+            carouselGroup.rotation.y = currentRotation;
             renderer.render(scene, camera);
         }
-        document.getElementById('loader').style.display = 'none';
-        animate();
+        init();
     </script>
 </body>
 </html>
