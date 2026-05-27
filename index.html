@@ -151,6 +151,7 @@
     init();
 
     async function init() {
+        // 安全宣告變數，進入 init 後擷取視窗比例
         aspect = window.innerWidth / window.innerHeight;
         RADIUS = 20; 
         CAMERA_BASE_Y = aspect < 1 ? 26 : 22;
@@ -158,7 +159,7 @@
         await fetchData();
         scene = new THREE.Scene(); scene.background = new THREE.Color(SPACE_COLOR); scene.fog = new THREE.Fog(SPACE_COLOR, 40, 140);
         
-        // 手機直向 0.7 比例視角
+        // 手機直向 0.7 比例視角配置
         camera = new THREE.PerspectiveCamera(aspect < 1 ? 48 : 35, aspect, 0.1, 500);
         camera.position.set(0, CAMERA_BASE_Y, aspect < 1 ? 115 : 75); 
         camera.lookAt(0, aspect < 1 ? 5 : 0, 0);
@@ -171,7 +172,6 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.shadowMap.enabled = true;
         
-        // 核心解鎖：移除 ToneMapping 色彩過濾，釋放高彩度霓虹流光背景
         renderer.toneMapping = THREE.NoToneMapping;
         document.body.appendChild(renderer.domElement);
 
@@ -207,10 +207,10 @@
     }
 
     function setupLightsAndFloor(studioEnvMap) {
-        // ✨ 還原第一版完美的溫柔環境基礎光強
+        // 還原第一版完美的溫柔基礎光強
         scene.add(new THREE.AmbientLight(0xffffff, 1.2));
         
-        // ✨ 還原第一版完美的黃、紫、橘、粉霓虹點光源物理參數
+        // 還原第一版完美的霓虹點光源物理參數（強度與高度灑落，形成高糊暈染）
         const lightColors = [0xffccaa, 0xffbb99, 0xffcccc, 0xffaaee];
         const lightIntensities = aspect < 1 ? [120, 100, 100, 80] : [200, 180, 180, 140];
 
@@ -220,13 +220,13 @@
             lights.push(light); scene.add(light);
         }
         
-        // 🔥【神級流光還原：移殖第一版完美地板參數】🔥
+        // 🔥【神級流光還原：移殖第一版地板參數】🔥
         // 大幅降低粗糙度至原本最完美的 0.8，金屬度設為 0.1。
         // 唯有這樣設定，地板才能完美與環境貼圖 (studioEnvMap) 產生物理高感折射，
-        // 讓原本那道大範圍、軟綿綿、充滿黃紫粉漸層的夢幻霓虹流光一瞬間 100% 歸位，徹底消除均勻的惨白與死灰！
+        // 讓原本那道大範圍、軟綿綿、充滿黃紫粉漸層的夢幻霓虹流光一瞬間百分之百歸位！
         const floorGeo = new THREE.PlaneGeometry(1000, 1000);
         const floorMat = new THREE.MeshStandardMaterial({ 
-            color: new THREE.Color('#4a3c3c'), // 還原最厲害的 Mood 棕灰
+            color: new THREE.Color('#4a3c3c'), 
             roughness: 0.8, // 🔥 抓回環境貼圖反射的世紀鑰匙！
             metalness: 0.1,
             envMap: studioEnvMap
@@ -236,6 +236,11 @@
         floor.receiveShadow = true; 
         scene.add(floor);
         
+        // 💡 移除怪球體邊界，換回超巨型磨砂背板牆
+        const bgWallGeo = new THREE.SphereGeometry(85, 32, 32);
+        const bgWallMat = new THREE.MeshStandardMaterial({ color: 0x5a4a4d, side: THREE.BackSide, roughness: 0.9 });
+        const bgWall = new THREE.Mesh(bgWallGeo, bgWallMat); scene.add(bgWall);
+
         centerModelGroup = new THREE.Group(); scene.add(centerModelGroup);
     }
 
@@ -271,10 +276,11 @@
                         if(n.isMesh) {
                             n.castShadow = true;
                             if(n.material) n.material.envMap = studioEnvMap;
-                            n.layers.set(1); 
+                            n.layers.set(1); // 3D模型鎖定在 Layer 1
                         }
                     });
 
+                    // 💡 中心包圍盒原點對齊校正
                     const box = new THREE.Box3().setFromObject(model);
                     const center = new THREE.Vector3();
                     box.getCenter(center);
@@ -344,161 +350,4 @@
         triggerNaturalGyro(); 
         isTouching = true; 
         touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
-        lastTouchX = touchStartX; lastTouchY = touchStartY;
-        touchStartTime = Date.now(); rotationVelocity = 0; 
-    }
-
-    function onTouchMove(e) {
-        if (!isTouching || currentActiveIndex !== -1) return;
-        const currentX = e.touches[0].clientX; const currentY = e.touches[0].clientY;
-        const deltaX = currentX - lastTouchX; const deltaY = currentY - lastTouchY;
-        
-        targetRotation += deltaX * 0.007 + deltaY * 0.004; 
-        lastTouchX = currentX; lastTouchY = currentY;
-        e.preventDefault();
-    }
-
-    function onTouchEnd(e) { 
-        isTouching = false; 
-        const duration = Date.now() - touchStartTime;
-        const totalDist = Math.sqrt(Math.pow(lastTouchX - touchStartX, 2) + Math.pow(lastTouchY - touchStartY, 2));
-        if (duration < 250 && totalDist < 15) onClick(e); 
-    }
-
-    function onClick(e) {
-        triggerNaturalGyro();
-
-        if (currentActiveIndex !== -1) {
-            const path = e.composedPath ? e.composedPath() : [];
-            const clickedOnContent = path.some(el => el.classList && el.classList.contains('panel-content'));
-            if (!clickedOnContent && e.target.id !== 'audio-toggle') exitDetailMode();
-            return;
-        }
-
-        const clientX = e.clientX || lastTouchX; const clientY = e.clientY || lastTouchY;
-        mouse.x = (clientX / window.innerWidth) * 2 - 1; mouse.y = -(clientY / window.innerHeight) * 2 + 1;
-        
-        raycaster.setFromCamera(mouse, camera);
-        const hits = raycaster.intersectObjects(cardMeshes);
-        if (hits.length > 0) {
-            const hit = hits[0].object;
-            enterDetailMode(hit);
-            
-            let targetAngle = -hit.userData.originalAngle;
-            const currentRot = currentRotation; const twoPi = Math.PI * 2;
-            const cycles = Math.floor(currentRot / twoPi);
-            targetAngle += cycles * twoPi;
-            const diff = targetAngle - currentRot;
-            if (diff > Math.PI) targetAngle -= twoPi;
-            else if (diff < -Math.PI) targetAngle += twoPi;
-            targetRotation = targetAngle;
-        }
-    }
-
-    function enterDetailMode(mesh) {
-        currentActiveIndex = mesh.userData.dataIndex;
-        document.getElementById('glass-panel').classList.add('full-open');
-        document.body.classList.add('panel-open');
-        setTimeout(() => {
-            switchPreviewModel(currentActiveIndex);
-            const p = projects[currentActiveIndex];
-            document.getElementById('detail-panel-title').innerText = p.title;
-            document.getElementById('detail-desc').innerHTML = p.desc;
-        }, 200); 
-
-        activeCardUUID = mesh.uuid;
-        mesh.userData.targetY = aspect < 1 ? 40 : 50; 
-    }
-
-    function exitDetailMode() {
-        currentActiveIndex = -1;
-        document.getElementById('glass-panel').classList.remove('full-open');
-        document.body.classList.remove('panel-open');
-        if (activeCardUUID) {
-            const m = cardMeshes.find(c => c.uuid === activeCardUUID);
-            if (m) m.userData.targetY = aspect < 1 ? -2 : 0;
-        }
-        activeCardUUID = null;
-    }
-
-    function switchPreviewModel(idx) {
-        const p = projects[idx]; if(!p) return;
-        document.getElementById('ui-title').innerText = p.letter;
-        document.getElementById('ui-subtitle').innerText = p.title;
-        projects.forEach((proj, i) => {
-            if (proj.sceneObject) {
-                proj.sceneObject.visible = (i === idx);
-                if (i === idx) {
-                    proj.sceneObject.position.y = aspect < 1 ? 7.5 : 2.0; 
-                    window.centerModelTargetScale = (aspect < 1 ? 1.5 : 2.2) * proj.normalizedScale;
-                }
-            }
-        });
-    }
-
-    function setupUIEvents() {
-        const btn = document.getElementById('audio-toggle'); const audio = document.getElementById('bg-music'); let playing = false;
-        btn.addEventListener('click', (e) => { e.stopPropagation(); playing ? audio.pause() : audio.play(); playing = !playing; document.getElementById('icon-sound-on').style.display = playing ? 'block' : 'none'; document.getElementById('icon-sound-off').style.display = playing ? 'none' : 'block'; });
-        document.getElementById('close-btn').addEventListener('click', exitDetailMode);
-        document.querySelector('.panel-handle').addEventListener('click', exitDetailMode);
-    }
-
-    function onMouseMove(e) { if (currentActiveIndex !== -1) return; mouse.x = (e.clientX / window.innerWidth) * 2 - 1; mouse.y = -(e.clientY / window.innerHeight) * 2 + 1; }
-    function onWindowResize() { aspect = window.innerWidth / window.innerHeight; camera.aspect = aspect; camera.position.z = aspect < 1 ? 115 : 75; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); }
-
-    function animate() {
-        requestAnimationFrame(animate);
-        const time = Date.now() * 0.0002;
-        
-        if (!isTouching) { rotationVelocity = (targetRotation - currentRotation) * 0.05; currentRotation += rotationVelocity; } 
-        else { currentRotation += (targetRotation - currentRotation) * 0.15; }
-        if (carouselGroup) carouselGroup.rotation.y = currentRotation;
-
-        // 還原最完美的點光源高空慢速流動運動
-        lights.forEach((l, i) => {
-            const offset = (i * Math.PI) / 2;
-            const moodTime = aspect < 1 ? time * 0.6 : time; 
-            l.position.set(
-                Math.sin(moodTime + offset) * 28, 
-                CAMERA_BASE_Y + 16, 
-                Math.cos(moodTime + offset) * 28
-            );
-        });
-
-        gyroCurrentX += (gyroTargetX - gyroCurrentX) * 0.05;
-        gyroCurrentY += (gyroTargetY - gyroCurrentY) * 0.05;
-
-        const targetCamX = -mouse.x * (aspect < 1 ? 1 : 3) + gyroCurrentX;
-        const targetCamY = mouse.y * (aspect < 1 ? 1 : 3) + CAMERA_BASE_Y + gyroCurrentY;
-        camera.position.x += (targetCamX - camera.position.x) * 0.05;
-        camera.position.y += (targetCamY - camera.position.y) * 0.05;
-        camera.lookAt(0, aspect < 1 ? 5 : 0, 0);
-
-        cardMeshes.forEach(m => {
-            m.userData.currentY += (m.userData.targetY - m.userData.currentY) * 0.1; m.position.y = m.userData.currentY;
-            if (currentActiveIndex === -1) {
-                const worldPos = new THREE.Vector3(); m.getWorldPosition(worldPos);
-                m.position.y += Math.sin(time + m.userData.originalAngle) * 0.2; 
-
-                const distToFront = worldPos.distanceTo(new THREE.Vector3(0, aspect < 1 ? -2 : 0, RADIUS));
-                if (distToFront < (aspect < 1 ? 3.5 : 5) && previewIndex !== m.userData.dataIndex) {
-                    switchPreviewModel(m.userData.dataIndex); previewIndex = m.userData.dataIndex;
-                }
-                m.scale.lerp(new THREE.Vector3(distToFront < (aspect < 1 ? 3.5 : 5) ? 1.25 : 1, distToFront < (aspect < 1 ? 3.5 : 5) ? 1.25 : 1, 1), 0.1);
-            }
-        });
-
-        projects.forEach(p => {
-            if (p.sceneObject && p.sceneObject.visible) {
-                p.sceneObject.rotation.y += 0.005;
-                const currentScale = p.sceneObject.scale.x;
-                const newScale = currentScale + (window.centerModelTargetScale - currentScale) * 0.05;
-                p.sceneObject.scale.set(newScale, newScale, newScale);
-            }
-        });
-
-        renderer.render(scene, camera);
-    }
-</script>
-</body>
-</html>
+        lastTouchX = touch
