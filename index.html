@@ -135,7 +135,7 @@
     import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
     import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-    // 💡 鎖定全域變數安全架構
+    // 💡 嚴格宣告變數，於 init 內部安全配置，防堵任何 ReferenceError 發生
     let RADIUS, CAMERA_BASE_Y, aspect;
     const CARD_COUNT = 25; const SPACE_COLOR = '#6c5b5e';
     
@@ -147,13 +147,12 @@
     const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2(), manager = new THREE.LoadingManager();
     let lights = [], studioEnvMap;
 
-    // 隨手機角度移動傾斜平滑控制變數
+    // 隨手機角度傾斜控制變數
     let gyroTargetX = 0, gyroTargetY = 0, gyroCurrentX = 0, gyroCurrentY = 0, gyroEnabled = false;
 
     init();
 
     async function init() {
-        // ✨【初始化安全鎖】：進入函數第一步讀取視窗比例，徹底砍斷 ReferenceError，保證 100% 載入順暢
         aspect = window.innerWidth / window.innerHeight;
         RADIUS = 20; 
         CAMERA_BASE_Y = aspect < 1 ? 26 : 22;
@@ -161,12 +160,12 @@
         await fetchData();
         scene = new THREE.Scene(); scene.background = new THREE.Color(SPACE_COLOR); scene.fog = new THREE.Fog(SPACE_COLOR, 40, 140);
         
-        // 💡 ✨ 手機直向縮小至精緻 0.7 比例 ✨ 💡
+        // 💡 手機直向縮小 0.7 比例自適應配置
         camera = new THREE.PerspectiveCamera(aspect < 1 ? 48 : 35, aspect, 0.1, 500);
         camera.position.set(0, CAMERA_BASE_Y, aspect < 1 ? 115 : 75); 
         camera.lookAt(0, aspect < 1 ? 5 : 0, 0);
 
-        // 開啟 Layer 渲染通道，中心 3D 模型正式歸位
+        // 開啟 Layer 渲染通道，防堵中心模型隱形
         camera.layers.enable(0);
         camera.layers.enable(1);
 
@@ -175,7 +174,7 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.shadowMap.enabled = true;
         
-        // 🔥 解鎖色彩空間映射過濾：鎖死 NoToneMapping，強制還原原本最高彩度的黃紫粉霓虹流體背景！
+        // 🔥 關閉調色盤過濾：鎖死 NoToneMapping，強行還原最高彩度的黃紫霓虹流體背景！
         renderer.toneMapping = THREE.NoToneMapping;
         document.body.appendChild(renderer.domElement);
 
@@ -188,7 +187,6 @@
         window.centerModelTargetScale = aspect < 1 ? 1.5 : 2.2;
 
         if (projects.length > 0) { 
-            // 💡 100% 復活中心 3D 模型載入
             await preloadAllModels(studioEnvMap); 
             switchPreviewModel(0); 
         }
@@ -200,7 +198,7 @@
         window.addEventListener('mousedown', () => { isTouching = true; });
         window.addEventListener('mouseup', (e) => { isTouching = false; onClick(e); });
         
-        // 💡 縫合自然發生的隱形隨手機移動機制 (陀螺儀)
+        // 💡 自然發生的隨視角移動傾斜觸發 (陀螺儀)
         window.addEventListener('touchstart', onTouchStart, { passive: false });
         window.addEventListener('touchmove', onTouchMove, { passive: false });
         window.addEventListener('touchend', onTouchEnd);
@@ -212,12 +210,11 @@
     }
 
     function setupLightsAndFloor(studioEnvMap) {
-        // 全域調和光
-        scene.add(new THREE.AmbientLight(0xffffff, 1.2));
+        scene.add(new THREE.AmbientLight(0xffffff, 1.3));
         
-        // ✨ 💡 美美光感復活秘訣：將點光源拉高到 CAMERA_BASE_Y + 18 的高空灑落 💡 ✨
-        // 強度降低為原本的 240~160，結合 1.25 的高衰減。
-        // 這樣點光源就不會在地面聚集成刺眼的白色過曝塊，而是從高空像薄霧一樣「大面積、軟綿綿」地暈染開來。
+        // ✨ 💡 美美光感復活秘訣：將點光源拉高到 CAMERA_BASE_Y + 18 的天花板級別高空灑落 💡 ✨
+        // 降低強度（Intensity 改為 240～160），增加 decay 衰減率為 1.25。
+        // 這樣點光源就不會在地面聚集成刺眼的死白怪盤子，而是從高空像薄霧一樣，大面積、軟綿綿地在後方與地面上暈染、變糊開來。
         const lightColors = [0xffccaa, 0xffbb99, 0xffcccc, 0xffaaee];
         const lightIntensities = aspect < 1 ? [150, 130, 130, 110] : [240, 200, 200, 160];
 
@@ -227,11 +224,11 @@
             lights.push(light); scene.add(light);
         }
         
-        // 地板接收磨砂感漫反射
+        // 地板平面接收極致磨砂漫反射
         const floorGeo = new THREE.PlaneGeometry(1000, 1000);
         const floorMat = new THREE.MeshStandardMaterial({ 
             color: new THREE.Color('#4a3c3c'), 
-            roughness: 0.96, // 提高粗糙度至極致霧面，把光斑完全「揉碎、變糊」，徹底抹去亮白色怪盤子感
+            roughness: 0.96, // 提高粗糙度至 0.96 (磨砂霧面)，將強光完全揉碎變糊，呈現溫柔暗調
             metalness: 0.05,
             envMap: studioEnvMap
         });
@@ -240,7 +237,7 @@
         floor.receiveShadow = true; 
         scene.add(floor);
         
-        // 💡 徹底消滅怪邊界：在最外層加上一個大型霧面感光背板牆（球體內壁），捕捉擴散出來的溫柔黃紫流光
+        // 💡 徹底消除怪邊界：在最外層加上一個巨型霧面球體內壁作為背景感光牆
         const bgWallGeo = new THREE.SphereGeometry(75, 32, 32);
         const bgWallMat = new THREE.MeshStandardMaterial({ color: 0x554649, side: THREE.BackSide, roughness: 0.95 });
         const bgWall = new THREE.Mesh(bgWallGeo, bgWallMat); scene.add(bgWall);
@@ -280,11 +277,11 @@
                         if(n.isMesh) {
                             n.castShadow = true;
                             if(n.material) n.material.envMap = studioEnvMap;
-                            n.layers.set(1); // 3D模型置於 Layer 1
+                            n.layers.set(1); // 💡 3D 模型牢牢綁定在 Layer 1 
                         }
                     });
 
-                    // 💡 模型包圍盒原點歸零位移校正：防止模型原點歪掉偏離螢幕中心！
+                    // 💡 中心點對齊歸零校正，防止 Blender 導出原點歪掉飛走不見
                     const box = new THREE.Box3().setFromObject(model);
                     const center = new THREE.Vector3();
                     box.getCenter(center);
@@ -310,8 +307,8 @@
             const p = projects[i % projects.length];
             const angle = (i / CARD_COUNT) * Math.PI * 2;
             
-            // 💡 ✨ 隔絕外部光源變色：卡片全面換用 MeshBasicMaterial 材質 ！ ✨ 💡
-            // 這種材質完全不與 3D 空間中的光照起物理反應，100% 呈現圖片原本最純淨、乾淨的原色，旋轉時絕對不被光照染色發白！
+            // 💡 ✨ 隔絕外部光源變色：卡片全面採用 MeshBasicMaterial 材質 ！ ✨ 💡
+            // 這種材質完全不接受空間物理光照與折影反應，100% 呈現圖片原本最純淨的原色，旋轉時絕不褪色、不變白！
             const mesh = new THREE.Mesh(
                 new THREE.PlaneGeometry(3.6, 2.4), 
                 new THREE.MeshBasicMaterial({ 
@@ -330,7 +327,7 @@
         }
     }
 
-    // 💡 隨手機角度移動傾斜功能 (隱形活化)
+    // 💡 隱形隨視角移動活化申請 (手碰觸螢幕瞬間自然背景通關，不用醜按鈕)
     function triggerNaturalGyro() {
         if (gyroEnabled) return;
         if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
@@ -353,7 +350,7 @@
     }
 
     function onTouchStart(e) { 
-        triggerNaturalGyro(); // 手指碰螢幕瞬間自動背景開啟陀螺儀
+        triggerNaturalGyro(); // 活化隨手機角度移動傾斜功能
         isTouching = true; 
         touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
         lastTouchX = touchStartX; lastTouchY = touchStartY;
@@ -378,9 +375,6 @@
     }
 
     function onClick(e) {
-        // 隱形隨視角傾斜通關授權
-        triggerNaturalGyro();
-
         if (currentActiveIndex !== -1) {
             const path = e.composedPath ? e.composedPath() : [];
             const clickedOnContent = path.some(el => el.classList && el.classList.contains('panel-content'));
@@ -440,9 +434,10 @@
         document.getElementById('ui-subtitle').innerText = p.title;
         projects.forEach((proj, i) => {
             if (proj.sceneObject) {
+                // 💡 100% 復活中心 3D 模型顯示與控制
                 proj.sceneObject.visible = (i === idx);
                 if (i === idx) {
-                    // ✨ 讓中間 3D 模型稍微拉高、浮空一些，比例非常優雅高檔
+                    // 讓中間模型高一點，浮空比例非常優雅高檔
                     proj.sceneObject.position.y = aspect < 1 ? 7.5 : 2.0; 
                     window.centerModelTargetScale = (aspect < 1 ? 1.5 : 2.2) * proj.normalizedScale;
                 }
@@ -468,7 +463,7 @@
         else { currentRotation += (targetRotation - currentRotation) * 0.15; }
         if (carouselGroup) carouselGroup.rotation.y = currentRotation;
 
-        // 💡 ✨ 燈光高度鎖定在高空（Y軸固定在相機上方 38 的高度向下高空灑落，大面積柔和變糊）✨ 💡
+        // 💡 ✨ 點光源高度鎖定在高空（Y軸固定在相機上方 38 的高度向下高空灑落，大面積柔和變糊）✨ 💡
         lights.forEach((l, i) => {
             const offset = (i * Math.PI) / 2;
             const moodTime = aspect < 1 ? time * 0.6 : time; 
