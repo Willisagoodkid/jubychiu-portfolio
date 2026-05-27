@@ -155,12 +155,11 @@
         await fetchData();
         scene = new THREE.Scene(); scene.background = new THREE.Color(SPACE_COLOR); scene.fog = new THREE.Fog(SPACE_COLOR, 40, 140);
         
-        // 💡 手機直向視角拉遠（Z軸到115），圓環在手機上自然等比例縮小至 0.7 倍，且字體不重疊
+        // 💡 手機直向視角拉遠（Z軸到115），圓環在手機上自然縮小至 0.7 倍
         camera = new THREE.PerspectiveCamera(aspect < 1 ? 48 : 35, aspect, 0.1, 300);
         camera.position.set(0, CAMERA_BASE_Y, aspect < 1 ? 115 : 75); 
         camera.lookAt(0, aspect < 1 ? 5 : 0, 0);
         
-        // 🔥【終極復活核心】：強迫相機開啟 Layer 0 與 Layer 1，否則第1層的3D模型永遠被隱形！
         camera.layers.enable(0);
         camera.layers.enable(1);
 
@@ -168,6 +167,9 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.shadowMap.enabled = true;
+        
+        // ✨ 強制關掉調色過濾，釋放高彩度霓虹流光背景
+        renderer.toneMapping = THREE.NoToneMapping;
         document.body.appendChild(renderer.domElement);
 
         const pmremGenerator = new THREE.PMREMGenerator(renderer);
@@ -190,7 +192,7 @@
         window.addEventListener('mousedown', () => { isTouching = true; });
         window.addEventListener('mouseup', (e) => { isTouching = false; onClick(e); });
         
-        // 💡 縫合自然發生的陀螺儀機制
+        // 💡 縫合自然發生的隱形陀螺儀
         window.addEventListener('click', triggerNaturalGyro);
         window.addEventListener('touchstart', onTouchStart, { passive: false });
         window.addEventListener('touchmove', onTouchMove, { passive: false });
@@ -203,9 +205,9 @@
     }
 
     function setupLightsAndFloor(studioEnvMap) {
-        scene.add(new THREE.AmbientLight(0xffffff, 1.3));
+        scene.add(new THREE.AmbientLight(0xffffff, 1.4));
         
-        // 💡 霓虹光感更糊、更高的黃金參數
+        // ✨ 高空柔化光感參數鎖死
         const lightColors = [0xffccaa, 0xffbb99, 0xffcccc, 0xffaaee];
         const lightIntensities = aspect < 1 ? [140, 120, 120, 100] : [240, 200, 200, 160];
 
@@ -215,7 +217,7 @@
             lights.push(light); scene.add(light);
         }
         
-        // 💡 提升粗糙度至 0.96（超霧面漫反射），完美揉碎暈染光斑
+        // 地板接收陰影
         const floorGeo = new THREE.PlaneGeometry(1000, 1000);
         const floorMat = new THREE.MeshStandardMaterial({ 
             color: new THREE.Color('#463838'), 
@@ -228,9 +230,16 @@
         floor.receiveShadow = true; 
         scene.add(floor);
         
-        // 背景大牆，捕捉並均勻變糊周圍光影
-        const bgWallGeo = new THREE.SphereGeometry(70, 32, 32);
-        const bgWallMat = new THREE.MeshStandardMaterial({ color: 0x554649, side: THREE.BackSide, roughness: 0.95 });
+        // ✨【關鍵核心：霓虹感光背景球體】
+        // 既然前排卡片不照光，我們在最外圍放一面超高磨砂感光牆（粗糙度 0.95），
+        // 這樣四顆高空點光源一晃動，就會完美的在這面牆上反射、擴散出極致漂亮的黃紫粉流體漸層背景！
+        const bgWallGeo = new THREE.SphereGeometry(75, 32, 32);
+        const bgWallMat = new THREE.MeshStandardMaterial({ 
+            color: 0x554649, 
+            side: THREE.BackSide, 
+            roughness: 0.95,
+            metalness: 0.1
+        });
         const bgWall = new THREE.Mesh(bgWallGeo, bgWallMat); scene.add(bgWall);
 
         centerModelGroup = new THREE.Group(); scene.add(centerModelGroup);
@@ -268,11 +277,10 @@
                         if(n.isMesh) {
                             n.castShadow = true;
                             if(n.material) n.material.envMap = studioEnvMap;
-                            n.layers.set(1); // 💡 中心模型指定在第 1 層
+                            n.layers.set(1); 
                         }
                     });
 
-                    // 💡 中心包圍盒原點歸零位移（防止Blender原點歪掉飛走不見）
                     const box = new THREE.Box3().setFromObject(model);
                     const center = new THREE.Vector3();
                     box.getCenter(center);
@@ -298,7 +306,7 @@
             const p = projects[i % projects.length];
             const angle = (i / CARD_COUNT) * Math.PI * 2;
             
-            // 💡 100% 換成 MeshBasicMaterial！完全隔絕環境與點光源的照射反光，色彩純淨絕不泛白！
+            // ✨ 保持 MeshBasicMaterial：隔絕物理光照，圖片100%原色、不反光、不泛白變色
             const mesh = new THREE.Mesh(
                 new THREE.PlaneGeometry(3.6, 2.4), 
                 new THREE.MeshBasicMaterial({ 
@@ -440,7 +448,7 @@
     }
 
     function onMouseMove(e) { if (currentActiveIndex !== -1) return; mouse.x = (e.clientX / window.innerWidth) * 2 - 1; mouse.y = -(e.clientY / window.innerHeight) * 2 + 1; }
-    function onWindowResize() { const aspect = window.innerWidth / window.innerHeight; camera.aspect = aspect; camera.position.z = aspect < 1 ? 112 : 75; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); }
+    function onWindowResize() { const aspect = window.innerWidth / window.innerHeight; camera.aspect = aspect; camera.position.z = aspect < 1 ? 115 : 75; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); }
 
     function animate() {
         requestAnimationFrame(animate);
@@ -450,7 +458,7 @@
         else { currentRotation += (targetRotation - currentRotation) * 0.15; }
         if (carouselGroup) carouselGroup.rotation.y = currentRotation;
 
-        // 💡 燈光推高（Y軸推到相機上方高空高空灑落，大面積柔和變糊）
+        // 燈光高空灑落
         lights.forEach((l, i) => {
             const offset = (i * Math.PI) / 2;
             const moodTime = aspect < 1 ? time * 0.6 : time; 
@@ -461,7 +469,7 @@
             );
         });
 
-        // 融合隱形陀螺儀
+        // 融合隱形陀螺儀與滑鼠
         gyroCurrentX += (gyroTargetX - gyroCurrentX) * 0.05;
         gyroCurrentY += (gyroTargetY - gyroCurrentY) * 0.05;
 
