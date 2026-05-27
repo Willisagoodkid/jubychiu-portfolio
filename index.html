@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Juby Chiu Studio</title>
+    <title>Juby chiuuuuu studio <3 .</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,83 +18,63 @@
         #progress-bar { width: 200px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; overflow: hidden; }
         #progress-fill { width: 0%; height: 100%; background: #ffffff; transition: width 0.2s; }
 
-        /* 左上角標題 */
-        #brand {
-            position: absolute; top: 25px; left: 25px; color: #ffffff;
-            font-size: 1.1rem; font-weight: bold; letter-spacing: 1px;
-            z-index: 10; cursor: pointer; transition: opacity 0.3s;
-        }
+        #brand { position: absolute; top: 30px; left: 40px; color: #ffffff; font-size: 1.2rem; font-weight: bold; letter-spacing: 1px; z-index: 10; cursor: pointer; transition: opacity 0.3s; }
+        #brand:hover { opacity: 0.7; }
 
-        /* 右上角音樂按鈕 (毛玻璃風格) */
         #audio-toggle {
-            position: absolute; top: 20px; right: 25px;
-            width: 40px; height: 40px;
+            position: absolute; top: 25px; right: 40px; width: 45px; height: 45px;
             background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 50%;
-            display: flex; justify-content: center; align-items: center;
-            color: #ffffff; cursor: pointer; z-index: 20; transition: all 0.3s ease;
+            display: flex; justify-content: center; align-items: center; color: #ffffff; cursor: pointer; z-index: 20; transition: all 0.3s ease;
         }
-        #audio-toggle:hover { background: rgba(255, 255, 255, 0.25); transform: scale(1.05); }
-        #audio-toggle svg { width: 20px; height: 20px; fill: currentColor; }
+        #audio-toggle svg { width: 22px; height: 22px; fill: currentColor; }
 
-        /* 首頁資訊層 */
         #ui-layer {
-            position: absolute; bottom: 12%; left: 25px;
-            text-align: left; pointer-events: none; color: #ffffff; z-index: 5;
+            position: absolute; bottom: 15%; left: 8%; width: 600px; text-align: left; pointer-events: none; color: #ffffff; z-index: 5;
             transition: opacity 0.6s, transform 0.8s cubic-bezier(0.19, 1, 0.22, 1);
         }
-        body.panel-open #ui-layer { transform: translateY(-100px); opacity: 0; }
-        #ui-title { font-size: 4rem; font-weight: 900; margin: 0; line-height: 0.85; text-transform: uppercase; }
-        #ui-subtitle { font-size: 1rem; font-weight: 700; margin: 8px 0 0 0; padding-left: 10px; border-left: 3px solid #ffffff; }
+        body.panel-open #ui-layer { transform: translateY(-200px); opacity: 0; }
+        #ui-title { font-size: 5.5rem; font-weight: 900; margin: 0; line-height: 0.85; text-transform: uppercase; }
+        #ui-subtitle { font-size: 1.2rem; font-weight: 700; margin: 0; padding-left: 12px; border-left: 4px solid #ffffff; line-height: 1.2; }
 
-        /* 手機彈起式底部面板 (Bottom Sheet) */
+        /* 彈起式面板優化 */
         #glass-panel {
             position: absolute; bottom: 0; left: 0; width: 100%; height: 85vh; 
-            background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
             border-top: 1px solid rgba(255, 255, 255, 0.15); border-radius: 30px 30px 0 0; 
-            transform: translateY(100%); transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); 
-            z-index: 100; display: flex; flex-direction: column; align-items: center;
+            transform: translateY(100%); transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); 
+            z-index: 100; display: flex; flex-direction: column; align-items: center; cursor: pointer;
         }
-        #glass-panel.full-open { transform: translateY(0%); background: rgba(255, 255, 255, 0.18); }
+        #glass-panel.full-open { transform: translateY(0%); background: rgba(255, 255, 255, 0.15); cursor: default; }
 
-        .panel-handle { width: 50px; height: 5px; background: rgba(255,255,255,0.4); border-radius: 5px; margin: 15px 0 20px 0; flex-shrink: 0; cursor: pointer; }
+        .panel-handle { width: 60px; height: 5px; background: rgba(255,255,255,0.4); border-radius: 5px; margin-top: 15px; margin-bottom: 30px; flex-shrink: 0; }
 
         .panel-content {
-            width: 100%; padding: 0 25px; box-sizing: border-box;
-            display: flex; flex-direction: column;
-            gap: 20px; opacity: 0; transition: opacity 0.5s; height: 100%; overflow-y: auto;
+            width: 100%; max-width: 100%; padding: 0 40px; box-sizing: border-box;
+            display: flex; flex-direction: column; gap: 50px; opacity: 0; transition: opacity 0.8s; height: 100%; overflow-y: auto;
         }
         #glass-panel.full-open .panel-content { opacity: 1; }
 
-        .panel-left { width: 100%; padding-top: 10px; }
-        .panel-title-text { font-size: 2.2rem; font-weight: 900; color: #ffffff; line-height: 1.1; }
+        .panel-left { width: 100%; padding-top: 20px; }
+        .panel-title-text { font-size: 3.5rem; font-weight: 900; color: #ffffff; line-height: 1.1; word-break: break-word; }
 
         .panel-right { width: 100%; padding-bottom: 100px; }
         .panel-right::-webkit-scrollbar { width: 4px; }
-        .panel-right::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 4px; }
+        .panel-right::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.4); border-radius: 4px; }
 
-        .detail-text img { max-width: 100%; height: auto; border-radius: 12px; margin-bottom: 20px; display: block; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
-        .detail-text h2 { font-size: 1.6rem; font-weight: 900; margin: 0 0 15px 0; color: #ffffff; }
-        .detail-text p { font-size: 1rem; line-height: 1.7; color: #eeeeee; margin-bottom: 25px; }
+        .detail-text { width: 100%; }
+        .detail-text img { max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 25px; display: block; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .detail-text h2 { font-size: 2rem; font-weight: 900; margin: 0 0 15px 0; color: #ffffff; }
+        .detail-text p { font-size: 1.1rem; line-height: 1.8; color: #eeeeee; margin-bottom: 25px; }
 
-        /* ✕ 關閉按鈕 */
-        #close-btn {
-            position: absolute; top: 20px; right: 25px; width: 30px; height: 30px;
-            color: rgba(255, 255, 255, 0.7); font-size: 24px; display: none; z-index: 110; cursor: pointer;
-        }
+        #close-btn { position: absolute; top: 20px; right: 25px; width: 30px; height: 30px; color: white; font-size: 24px; display: none; z-index: 110; cursor: pointer; }
         body.panel-open #close-btn { display: block; }
 
-        /* ✨ RWD 電腦版排版還原 */
+        /* 電腦端排版還原 */
         @media (min-width: 769px) {
-            #brand { font-size: 1.2rem; top: 30px; left: 40px; }
-            #ui-layer { left: 8%; bottom: 15%; }
-            #ui-title { font-size: 5.5rem; }
-            #ui-subtitle { font-size: 1.2rem; }
-            .panel-content { flex-direction: row; padding: 0 60px; gap: 60px; }
-            .panel-left { flex: 1; padding-top: 150px; }
-            .panel-right { flex: 2.5; padding-right: 30px; }
-            .panel-title-text { font-size: 3.5rem; }
-            .detail-text h2 { font-size: 2rem; }
+            .panel-content { flex-direction: row; }
+            .panel-left { flex: 1; padding-top: 200px; }
+            .panel-right { flex: 3; padding-right: 25px; }
         }
     </style>
     
@@ -147,16 +127,13 @@
     import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
     import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-    const RADIUS = 20;
-    const CARD_COUNT = 25;
-    const SPACE_COLOR = '#6c5b5e';
-    
+    const RADIUS = 20; const CARD_COUNT = 25; const SPACE_COLOR = '#6c5b5e';
     let scene, camera, renderer, carouselGroup, centerModelGroup, cardMeshes = [], projects = [];
     let targetRotation = 0, currentRotation = 0, rotationVelocity = 0;
     let currentActiveIndex = -1, activeCardUUID = null, previewIndex = 0, centerModelTargetScale = 2.0;
     
     let isTouching = false, touchStartX = 0;
-    const CAMERA_BASE_Y = 16; // 💡 微調 Y 軸，不傾斜，讓圓環保持在水平正中心
+    const CAMERA_BASE_Y = 22; // 💡 鏡頭放回經典高度
     const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2(), manager = new THREE.LoadingManager();
     let lights = [], studioEnvMap;
 
@@ -164,13 +141,14 @@
 
     async function init() {
         await fetchData();
-        scene = new THREE.Scene(); scene.background = new THREE.Color(SPACE_COLOR); scene.fog = new THREE.Fog(SPACE_COLOR, 40, 150);
+        scene = new THREE.Scene(); scene.background = new THREE.Color(SPACE_COLOR); scene.fog = new THREE.Fog(SPACE_COLOR, 40, 140);
         
         const aspect = window.innerWidth / window.innerHeight;
-        // 💡 根據手機直向和電腦橫向，動態調整視野大小 (FOV)
-        camera = new THREE.PerspectiveCamera(aspect < 1 ? 48 : 35, aspect, 0.1, 500);
-        camera.position.set(0, CAMERA_BASE_Y, aspect < 1 ? 82 : 72); 
-        camera.lookAt(0, 4, 0); // 💡 微調看向上方，確保模型和圓環不會被下方的文字擋住
+        camera = new THREE.PerspectiveCamera(35, aspect, 0.1, 300);
+        
+        // 💡 修正相機位置：如果是手機(aspect < 1)，把相機往後退(Z軸到85)，圓環大小就會完美適中！
+        camera.position.set(0, CAMERA_BASE_Y, aspect < 1 ? 85 : 75); 
+        camera.lookAt(0, 0, 0); // 💡 修正：看回絕對零點中心，圓環在電腦上就不會偏向右邊！
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -181,15 +159,15 @@
         const pmremGenerator = new THREE.PMREMGenerator(renderer);
         studioEnvMap = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
 
-        setupLights();
+        setupLightsAndFloor();
         if (projects.length > 0) { await preloadAllModels(); switchPreviewModel(0); }
         createCarousel();
 
         window.addEventListener('resize', onWindowResize);
-        window.addEventListener('wheel', (e) => { if (currentActiveIndex === -1) targetRotation += e.deltaY * 0.0008; });
+        window.addEventListener('wheel', (e) => { targetRotation += e.deltaY * 0.0008; });
         window.addEventListener('mousemove', onMouseMove);
         
-        window.addEventListener('mousedown', (e) => { isTouching = true; });
+        window.addEventListener('mousedown', () => { isTouching = true; });
         window.addEventListener('mouseup', (e) => { isTouching = false; onClick(e); });
         
         window.addEventListener('touchstart', onTouchStart, { passive: false });
@@ -202,34 +180,34 @@
         animate();
     }
 
+    function setupLightsAndFloor() {
+        // 💡 強制提高全域基礎環境光，這樣即使模型載入失敗，背景跟卡片的光感也絕對不會消失
+        scene.add(new THREE.AmbientLight(0xffffff, 1.8));
+        
+        const colors = [0xffd54f, 0xc084fc, 0xff8a65, 0xf472b6];
+        for(let i = 0; i < 4; i++) {
+            const light = new THREE.PointLight(colors[i], 2500, 200);
+            lights.push(light); scene.add(light);
+        }
+        
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), new THREE.MeshStandardMaterial({ color: SPACE_COLOR, roughness: 1.0 }));
+        floor.rotation.x = -Math.PI / 2; floor.position.y = -4.0; floor.receiveShadow = true; scene.add(floor);
+        
+        centerModelGroup = new THREE.Group(); scene.add(centerModelGroup);
+    }
+
     async function fetchData() {
-        const items = ['a', 'b', 'c', 'd', 'e', 'f']; 
+        // 💡 自動過濾：幫你限制在你目前真正擁有的 a, b, c, d 四個實體檔案，防止抓不到 e 和 f 卡住
+        const items = ['a', 'b', 'c', 'd']; 
         projects = await Promise.all(items.map(async (name, index) => {
             let desc = ""; let customTitle = name.toUpperCase();
             if (name === 'a') customTitle = "JUBY 2014";
-            if (name === 'c') customTitle = "JUBY DANCE";
-            
             try { 
                 const r = await fetch(`txts/${name}.txt?t=${Date.now()}`); 
-                if(r.ok) {
-                    desc = await r.text();
-                } else {
-                    // 💡 防錯機制：如果抓不到 txt，就自動產生乾淨的預設文字，網頁就不會卡死
-                    desc = `<h2>COLLECTION ${name.toUpperCase()}</h2><p>Experience the latest creation from Juby Chiu Studio. Exploring texture, form, and futuristic design language.</p><img src="images/${name}.png" alt="preview">`;
-                }
+                if(r.ok) desc = await r.text();
             } catch(e){}
             return { id: index, letter: name.toUpperCase(), title: customTitle, image: `images/${name}.png?t=${Date.now()}`, model: `models/${name}.glb`, desc: desc, sceneObject: null, normalizedScale: 1 };
         }));
-    }
-
-    function setupLights() {
-        scene.add(new THREE.AmbientLight(0xffffff, 1.5));
-        const colors = [0xffd54f, 0xc084fc, 0xff8a65, 0xf472b6];
-        for(let i = 0; i < 4; i++) {
-            const light = new THREE.PointLight(colors[i], 2000, 150);
-            lights.push(light); scene.add(light);
-        }
-        centerModelGroup = new THREE.Group(); scene.add(centerModelGroup);
     }
 
     async function preloadAllModels() {
@@ -244,10 +222,13 @@
                     model.traverse(n => { if(n.isMesh) { n.castShadow = true; n.material.envMap = studioEnvMap; n.layers.set(1); } });
                     const box = new THREE.Box3().setFromObject(model);
                     const size = new THREE.Vector3(); box.getSize(size);
-                    project.normalizedScale = 5.0 / Math.max(size.x, size.y, size.z);
+                    project.normalizedScale = 4.0 / Math.max(size.x, size.y, size.z);
                     model.visible = false; centerModelGroup.add(model); project.sceneObject = model;
                     res();
-                }, undefined, res);
+                }, undefined, () => {
+                    console.log("Model loading skipped or delayed for:", project.model);
+                    res();
+                });
             });
         }
     }
@@ -261,20 +242,20 @@
             const mesh = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 2.4), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.7, side: THREE.DoubleSide }));
             texLoader.load(p.image, (t) => { mesh.material.map = t; mesh.material.needsUpdate = true; });
             
-            // 💡 水平圓環公式還原，取消所有傾斜，讓後半圈乖乖繞回來
-            mesh.position.set(Math.sin(angle)*RADIUS, 4, Math.cos(angle)*RADIUS);
-            mesh.lookAt(0, 4, 0); mesh.rotateY(Math.PI / 2);
-            mesh.userData = { dataIndex: i % projects.length, originalAngle: angle, targetY: 4, currentY: 4 };
+            // 💡 完美的正圓形水平坐標公式還原
+            mesh.position.set(Math.sin(angle)*RADIUS, 0, Math.cos(angle)*RADIUS);
+            mesh.lookAt(0, 0, 0); mesh.rotateY(Math.PI / 2);
+            mesh.userData = { dataIndex: i % projects.length, originalAngle: angle, targetY: 0, currentY: 0 };
             carouselGroup.add(mesh); cardMeshes.push(mesh);
         }
     }
 
-    // ✨ 手機一指滑動與慣性輪盤滾動
+    // 手機觸控手勢
     function onTouchStart(e) { isTouching = true; touchStartX = e.touches[0].clientX; rotationVelocity = 0; }
     function onTouchMove(e) {
         if (!isTouching || currentActiveIndex !== -1) return;
         const deltaX = e.touches[0].clientX - touchStartX;
-        targetRotation += deltaX * 0.007; // 💡 控制手機滑動的靈敏度
+        targetRotation += deltaX * 0.006; 
         touchStartX = e.touches[0].clientX;
         e.preventDefault();
     }
@@ -295,7 +276,6 @@
             if (currentActiveIndex === hit.userData.dataIndex) return;
             enterDetailMode(hit);
             
-            // 💡 點擊後，把點到的卡片旋轉到最前面 (正前方角度為0)
             let targetAngle = -hit.userData.originalAngle;
             const currentRot = currentRotation;
             const twoPi = Math.PI * 2;
@@ -315,12 +295,11 @@
         document.getElementById('detail-panel-title').innerText = p.title;
         document.getElementById('detail-desc').innerHTML = p.desc;
         
-        // ✨ 內容從底部彈上來覆蓋
         document.getElementById('glass-panel').classList.add('full-open');
         document.body.classList.add('panel-open');
         
         activeCardUUID = mesh.uuid;
-        mesh.userData.targetY = 45; // ✨ 卡片往上飛效果
+        mesh.userData.targetY = 50;
     }
 
     function exitDetailMode() {
@@ -329,7 +308,7 @@
         document.body.classList.remove('panel-open');
         if (activeCardUUID) {
             const m = cardMeshes.find(c => c.uuid === activeCardUUID);
-            if (m) m.userData.targetY = 4;
+            if (m) m.userData.targetY = 0;
         }
         activeCardUUID = null;
     }
@@ -342,8 +321,8 @@
             if (proj.sceneObject) {
                 proj.sceneObject.visible = (i === idx);
                 if (i === idx) {
-                    proj.sceneObject.position.y = 4.5;
-                    centerModelTargetScale = proj.normalizedScale * (currentActiveIndex===-1 ? 2.4 : 3.0);
+                    proj.sceneObject.position.y = 1.3;
+                    centerModelTargetScale = proj.normalizedScale * (currentActiveIndex===-1 ? 2.0 : 2.5);
                 }
             }
         });
@@ -372,8 +351,8 @@
 
     function onWindowResize() {
         const aspect = window.innerWidth / window.innerHeight;
-        camera.aspect = aspect; camera.fov = aspect < 1 ? 48 : 35;
-        camera.position.z = aspect < 1 ? 82 : 72;
+        camera.aspect = aspect;
+        camera.position.z = aspect < 1 ? 85 : 75;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
     }
@@ -382,7 +361,6 @@
         requestAnimationFrame(animate);
         const time = Date.now() * 0.0002;
         
-        // 慣性滑動阻尼感運算
         if (!isTouching) {
             rotationVelocity = (targetRotation - currentRotation) * 0.05;
             currentRotation += rotationVelocity;
@@ -393,26 +371,24 @@
 
         lights.forEach((l, i) => {
             const offset = (i * Math.PI) / 2;
-            l.position.set(Math.sin(time + offset)*25, 10 + Math.sin(time*1.5)*5, Math.cos(time + offset)*25);
+            l.position.set(Math.sin(time + offset)*25, 8 + Math.sin(time*1.5)*3, Math.cos(time + offset)*25);
         });
 
-        // 💡 降低微動幅度，防止畫面劇烈傾斜破壞圓環形狀
-        const targetCamX = -mouse.x * 2;
-        const targetCamY = mouse.y * 2 + CAMERA_BASE_Y;
+        // 💡 擺動範圍微調，讓滑鼠移動時畫面更有呼吸感，但圓環形狀不扭曲
+        const targetCamX = -mouse.x * 3;
+        const targetCamY = mouse.y * 3 + CAMERA_BASE_Y;
         camera.position.x += (targetCamX - camera.position.x) * 0.05;
         camera.position.y += (targetCamY - camera.position.y) * 0.05;
-        camera.lookAt(0, 4, 0);
+        camera.lookAt(0, 0, 0);
 
         cardMeshes.forEach(m => {
             m.userData.currentY += (m.userData.targetY - m.userData.currentY) * 0.1;
             m.position.y = m.userData.currentY;
             
-            // 自動偵測正前方並顯示標題
             if (currentActiveIndex === -1) {
                 const worldPos = new THREE.Vector3();
                 m.getWorldPosition(worldPos);
-                // 💡 計算卡片與相機正前方的距離
-                const distToFront = worldPos.distanceTo(new THREE.Vector3(0, 4, RADIUS));
+                const distToFront = worldPos.distanceTo(new THREE.Vector3(0, 0, RADIUS));
                 if (distToFront < 5 && previewIndex !== m.userData.dataIndex) {
                     switchPreviewModel(m.userData.dataIndex);
                     previewIndex = m.userData.dataIndex;
