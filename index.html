@@ -39,18 +39,14 @@
 
         #glass-panel {
             position: absolute; bottom: 0; left: 0; width: 100%; height: 85vh; 
-            background: transparent; pointer-events: none;
+            background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border-top: 1px solid rgba(255, 255, 255, 0.15); border-radius: 30px 30px 0 0; 
             transform: translateY(100%); transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); 
-            z-index: 100; display: flex; flex-direction: column; align-items: center;
+            z-index: 100; display: flex; flex-direction: column; align-items: center; cursor: pointer;
         }
-        #glass-panel.full-open { 
-            transform: translateY(0%); 
-            background: rgba(255, 255, 255, 0.02); 
-            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-            pointer-events: auto;
-        }
+        #glass-panel.full-open { transform: translateY(0%); background: rgba(255, 255, 255, 0.15); cursor: default; }
 
-        .panel-handle { width: 60px; height: 5px; background: rgba(255,255,255,0.4); border-radius: 5px; margin-top: 15px; margin-bottom: 30px; flex-shrink: 0; cursor: pointer; }
+        .panel-handle { width: 60px; height: 5px; background: rgba(255,255,255,0.4); border-radius: 5px; margin-top: 15px; margin-bottom: 30px; flex-shrink: 0; }
 
         .panel-content {
             width: 100%; max-width: 100%; padding: 0 40px; box-sizing: border-box;
@@ -89,12 +85,22 @@
             .panel-right { flex: 3; padding-right: 25px; }
         }
     </style>
+    
+    <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
 </head>
 <body>
     <audio id="bg-music" loop><source src="music.mp3" type="audio/mpeg"></audio>
 
     <div id="loader">
-        <div id="loader-text">INITIALIZING...</div>
+        <div id="loader-text">LOADING...</div>
         <div id="progress-bar"><div id="progress-fill"></div></div>
     </div>
     
@@ -123,42 +129,40 @@
         </div>
     </div>
 
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
-            }
-        }
-    </script>
-
 <script type="module">
     import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
+    const aspect = window.innerWidth / window.innerHeight;
     const RADIUS = 20; const CARD_COUNT = 25; const SPACE_COLOR = '#6c5b5e';
-    let scene, camera, renderer, carouselGroup, cardMeshes = [], projects = [];
+    
+    let scene, camera, renderer, carouselGroup, centerModelGroup, cardMeshes = [], projects = [];
     let targetRotation = 0, currentRotation = 0, rotationVelocity = 0;
     let currentActiveIndex = -1, activeCardUUID = null, previewIndex = 0;
     
-    let isTouching = false, touchStartX = 0, touchStartY = 0, lastTouchX = 0, lastTouchY = 0;
-    let touchStartTime = 0;
-    const CAMERA_BASE_Y = 22;
-    const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2();
+    let isTouching = false, touchStartX = 0, touchStartY = 0, lastTouchX = 0, lastTouchY = 0, touchStartTime = 0;
+    const CAMERA_BASE_Y = aspect < 1 ? 26 : 22; 
+    const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2(), manager = new THREE.LoadingManager();
     let lights = [];
+
+    let gyroTargetX = 0, gyroTargetY = 0, gyroCurrentX = 0, gyroCurrentY = 0, gyroEnabled = false;
 
     init();
 
     async function init() {
         await fetchData();
-        scene = new THREE.Scene(); 
-        scene.background = new THREE.Color(SPACE_COLOR); 
-        scene.fog = new THREE.Fog(SPACE_COLOR, 40, 140);
+        scene = new THREE.Scene(); scene.background = new THREE.Color(SPACE_COLOR); scene.fog = new THREE.Fog(SPACE_COLOR, 40, 140);
         
-        const aspect = window.innerWidth / window.innerHeight;
+        // 💡 手機直向視角拉遠（Z軸到115），圓環在手機上自然等比例縮小至 0.7 倍，且字體不重疊
+        camera = new THREE.PerspectiveCamera(aspect < 1 ? 48 : 35, aspect, 0.1, 300);
+        camera.position.set(0, CAMERA_BASE_Y, aspect < 1 ? 115 : 75); 
+        camera.lookAt(0, aspect < 1 ? 5 : 0, 0);
         
-        // 💡 100% 鎖回當初最完美的相機距離 (Z軸固定 75)
-        camera = new THREE.PerspectiveCamera(aspect < 1 ? 45 : 35, aspect, 0.1, 300);
-        camera.position.set(0, CAMERA_BASE_Y, aspect < 1 ? 85 : 75); 
-        camera.lookAt(0, 0, 0);
+        // 🔥【終極復活核心】：強迫相機開啟 Layer 0 與 Layer 1，否則第1層的3D模型永遠被隱形！
+        camera.layers.enable(0);
+        camera.layers.enable(1);
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -166,9 +170,18 @@
         renderer.shadowMap.enabled = true;
         document.body.appendChild(renderer.domElement);
 
-        setupLightsAndFloor();
+        const pmremGenerator = new THREE.PMREMGenerator(renderer);
+        const studioEnvMap = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+
+        setupLightsAndFloor(studioEnvMap);
         createCarousel();
-        switchPreviewModel(0); 
+        
+        window.centerModelTargetScale = aspect < 1 ? 1.5 : 2.2;
+
+        if (projects.length > 0) { 
+            await preloadAllModels(studioEnvMap); 
+            switchPreviewModel(0); 
+        }
 
         window.addEventListener('resize', onWindowResize);
         window.addEventListener('wheel', (e) => { if(currentActiveIndex === -1) targetRotation += e.deltaY * 0.0008; });
@@ -177,6 +190,8 @@
         window.addEventListener('mousedown', () => { isTouching = true; });
         window.addEventListener('mouseup', (e) => { isTouching = false; onClick(e); });
         
+        // 💡 縫合自然發生的陀螺儀機制
+        window.addEventListener('click', triggerNaturalGyro);
         window.addEventListener('touchstart', onTouchStart, { passive: false });
         window.addEventListener('touchmove', onTouchMove, { passive: false });
         window.addEventListener('touchend', onTouchEnd);
@@ -187,26 +202,38 @@
         animate();
     }
 
-    function setupLightsAndFloor() {
-        // ✨ 環境光回歸當初最正確的 1.8 亮度
-        scene.add(new THREE.AmbientLight(0xffffff, 1.8));
+    function setupLightsAndFloor(studioEnvMap) {
+        scene.add(new THREE.AmbientLight(0xffffff, 1.3));
         
-        // ✨ 四顆高強度流體霓虹點光源
-        const colors = [0xffd54f, 0xc084fc, 0xff8a65, 0xf472b6];
+        // 💡 霓虹光感更糊、更高的黃金參數
+        const lightColors = [0xffccaa, 0xffbb99, 0xffcccc, 0xffaaee];
+        const lightIntensities = aspect < 1 ? [140, 120, 120, 100] : [240, 200, 200, 160];
+
         for(let i = 0; i < 4; i++) {
-            const light = new THREE.PointLight(colors[i], 3500, 200);
+            const light = new THREE.PointLight(lightColors[i], lightIntensities[i], 220);
+            light.decay = 1.2; 
             lights.push(light); scene.add(light);
         }
         
-        // ✨ 還原大師級無邊界接收陰影地板，完美捕捉點光源的漸層
-        const floorGeo = new THREE.PlaneGeometry(2000, 2000);
+        // 💡 提升粗糙度至 0.96（超霧面漫反射），完美揉碎暈染光斑
+        const floorGeo = new THREE.PlaneGeometry(1000, 1000);
         const floorMat = new THREE.MeshStandardMaterial({ 
-            color: new THREE.Color(SPACE_COLOR), 
-            roughness: 0.5, // 💡 微調粗糙度，讓地板完美接住四顆彩色點光源的性感反射光暈！
-            metalness: 0.1 
+            color: new THREE.Color('#463838'), 
+            roughness: 0.96, 
+            metalness: 0.05,
+            envMap: studioEnvMap
         });
         const floor = new THREE.Mesh(floorGeo, floorMat);
-        floor.rotation.x = -Math.PI / 2; floor.position.y = -4.0; floor.receiveShadow = true; scene.add(floor);
+        floor.rotation.x = -Math.PI / 2; floor.position.y = aspect < 1 ? -6.0 : -4.0; 
+        floor.receiveShadow = true; 
+        scene.add(floor);
+        
+        // 背景大牆，捕捉並均勻變糊周圍光影
+        const bgWallGeo = new THREE.SphereGeometry(70, 32, 32);
+        const bgWallMat = new THREE.MeshStandardMaterial({ color: 0x554649, side: THREE.BackSide, roughness: 0.95 });
+        const bgWall = new THREE.Mesh(bgWallGeo, bgWallMat); scene.add(bgWall);
+
+        centerModelGroup = new THREE.Group(); scene.add(centerModelGroup);
     }
 
     async function fetchData() {
@@ -223,59 +250,109 @@
                 const r = await fetch(`txts/${name}.txt?t=${Date.now()}`); 
                 if(r.ok) desc = await r.text();
             } catch(e){}
-            return { id: index, letter: name.toUpperCase(), title: customTitle, image: `images/${name}.png?t=${Date.now()}`, desc: desc };
+            return { id: index, letter: name.toUpperCase(), title: customTitle, image: `images/${name}.png?t=${Date.now()}`, model: `models/${name}.glb`, desc: desc, sceneObject: null, normalizedScale: 1 };
         }));
+    }
+
+    async function preloadAllModels(studioEnvMap) {
+        const loader = new GLTFLoader(manager);
+        const dracoLoader = new DRACOLoader();
+        dracoLoader.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
+        loader.setDRACOLoader(dracoLoader);
+
+        for (const project of projects) {
+            await new Promise(res => {
+                loader.load(project.model, (gltf) => {
+                    const model = gltf.scene;
+                    model.traverse(n => {
+                        if(n.isMesh) {
+                            n.castShadow = true;
+                            if(n.material) n.material.envMap = studioEnvMap;
+                            n.layers.set(1); // 💡 中心模型指定在第 1 層
+                        }
+                    });
+
+                    // 💡 中心包圍盒原點歸零位移（防止Blender原點歪掉飛走不見）
+                    const box = new THREE.Box3().setFromObject(model);
+                    const center = new THREE.Vector3();
+                    box.getCenter(center);
+                    model.position.sub(center); 
+
+                    const size = new THREE.Vector3(); box.getSize(size);
+                    project.normalizedScale = 4.0 / Math.max(size.x, size.y, size.z); 
+                    
+                    model.visible = false; 
+                    centerModelGroup.add(model); 
+                    project.sceneObject = model; 
+                    res();
+                }, undefined, () => { res(); });
+            });
+        }
     }
 
     function createCarousel() {
         carouselGroup = new THREE.Group(); scene.add(carouselGroup);
         const texLoader = new THREE.TextureLoader();
+
         for (let i = 0; i < CARD_COUNT; i++) {
             const p = projects[i % projects.length];
             const angle = (i / CARD_COUNT) * Math.PI * 2;
             
-            // 💡 終極換回 MeshStandardMaterial！讓卡片本身自帶吸光介質，完美反射點光源光感，又不會過曝曬白！
+            // 💡 100% 換成 MeshBasicMaterial！完全隔絕環境與點光源的照射反光，色彩純淨絕不泛白！
             const mesh = new THREE.Mesh(
                 new THREE.PlaneGeometry(3.6, 2.4), 
-                new THREE.MeshStandardMaterial({ 
-                    color: 0xffffff,
+                new THREE.MeshBasicMaterial({ 
+                    color: 0xffffff, 
                     transparent: true, 
                     opacity: 0.75, 
-                    side: THREE.DoubleSide,
-                    roughness: 0.4,
-                    metalness: 0.1
+                    side: THREE.DoubleSide
                 })
             );
             texLoader.load(p.image, (t) => { mesh.material.map = t; mesh.material.needsUpdate = true; });
             
-            mesh.position.set(Math.sin(angle)*RADIUS, 0, Math.cos(angle)*RADIUS);
-            mesh.lookAt(0, 0, 0); mesh.rotateY(Math.PI / 2);
-            mesh.userData = { dataIndex: i % projects.length, originalAngle: angle, targetY: 0, currentY: 0 };
+            mesh.position.set(Math.sin(angle)*RADIUS, aspect < 1 ? -2 : 0, Math.cos(angle)*RADIUS);
+            mesh.lookAt(0, aspect < 1 ? 5 : 0, 0); mesh.rotateY(Math.PI / 2);
+            mesh.userData = { dataIndex: i % projects.length, originalAngle: angle, targetY: aspect < 1 ? -2 : 0, currentY: aspect < 1 ? -2 : 0 };
             carouselGroup.add(mesh); cardMeshes.push(mesh);
         }
     }
 
+    function triggerNaturalGyro() {
+        if (gyroEnabled) return;
+        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+            DeviceOrientationEvent.requestPermission()
+                .then(state => { if (state === 'granted') { window.addEventListener('deviceorientation', handleOrientation); gyroEnabled = true; } })
+                .catch(console.error);
+        } else {
+            window.addEventListener('deviceorientation', handleOrientation);
+            gyroEnabled = true;
+        }
+    }
+
+    function handleOrientation(event) {
+        if (currentActiveIndex !== -1) return;
+        const beta = event.beta; const gamma = event.gamma;
+        if (beta && gamma) {
+            gyroTargetX = (gamma / 30) * 1.8; 
+            gyroTargetY = ((beta - 45) / 30) * 1.8; 
+        }
+    }
+
     function onTouchStart(e) { 
+        triggerNaturalGyro(); 
         isTouching = true; 
-        touchStartX = e.touches[0].clientX; 
-        touchStartY = e.touches[0].clientY;
-        lastTouchX = touchStartX;
-        lastTouchY = touchStartY;
-        touchStartTime = Date.now(); 
-        rotationVelocity = 0; 
+        touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
+        lastTouchX = touchStartX; lastTouchY = touchStartY;
+        touchStartTime = Date.now(); rotationVelocity = 0; 
     }
 
     function onTouchMove(e) {
         if (!isTouching || currentActiveIndex !== -1) return;
-        const currentX = e.touches[0].clientX;
-        const currentY = e.touches[0].clientY;
-        const deltaX = currentX - lastTouchX;
-        const deltaY = currentY - lastTouchY;
+        const currentX = e.touches[0].clientX; const currentY = e.touches[0].clientY;
+        const deltaX = currentX - lastTouchX; const deltaY = currentY - lastTouchY;
         
         targetRotation += deltaX * 0.007 + deltaY * 0.004; 
-        
-        lastTouchX = currentX;
-        lastTouchY = currentY;
+        lastTouchX = currentX; lastTouchY = currentY;
         e.preventDefault();
     }
 
@@ -283,22 +360,19 @@
         isTouching = false; 
         const duration = Date.now() - touchStartTime;
         const totalDist = Math.sqrt(Math.pow(lastTouchX - touchStartX, 2) + Math.pow(lastTouchY - touchStartY, 2));
-        if (duration < 250 && totalDist < 15) { onClick(e); }
+        if (duration < 250 && totalDist < 15) onClick(e); 
     }
 
     function onClick(e) {
         if (currentActiveIndex !== -1) {
             const path = e.composedPath ? e.composedPath() : [];
             const clickedOnContent = path.some(el => el.classList && el.classList.contains('panel-content'));
-            if (!clickedOnContent && e.target.id !== 'audio-toggle') { exitDetailMode(); }
+            if (!clickedOnContent && e.target.id !== 'audio-toggle') exitDetailMode();
             return;
         }
 
-        const clientX = e.clientX || lastTouchX;
-        const clientY = e.clientY || lastTouchY;
-        
-        mouse.x = (clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+        const clientX = e.clientX || lastTouchX; const clientY = e.clientY || lastTouchY;
+        mouse.x = (clientX / window.innerWidth) * 2 - 1; mouse.y = -(clientY / window.innerHeight) * 2 + 1;
         
         raycaster.setFromCamera(mouse, camera);
         const hits = raycaster.intersectObjects(cardMeshes);
@@ -307,8 +381,7 @@
             enterDetailMode(hit);
             
             let targetAngle = -hit.userData.originalAngle;
-            const currentRot = currentRotation;
-            const twoPi = Math.PI * 2;
+            const currentRot = currentRotation; const twoPi = Math.PI * 2;
             const cycles = Math.floor(currentRot / twoPi);
             targetAngle += cycles * twoPi;
             const diff = targetAngle - currentRot;
@@ -320,48 +393,54 @@
 
     function enterDetailMode(mesh) {
         currentActiveIndex = mesh.userData.dataIndex;
-        switchPreviewModel(currentActiveIndex);
-        const p = projects[currentActiveIndex];
-        document.getElementById('detail-panel-title').innerText = p.title;
-        document.getElementById('detail-desc').innerHTML = p.desc;
         document.getElementById('glass-panel').classList.add('full-open');
         document.body.classList.add('panel-open');
+        setTimeout(() => {
+            switchPreviewModel(currentActiveIndex);
+            const p = projects[currentActiveIndex];
+            document.getElementById('detail-panel-title').innerText = p.title;
+            document.getElementById('detail-desc').innerHTML = p.desc;
+        }, 200); 
+
         activeCardUUID = mesh.uuid;
-        mesh.userData.targetY = 50;
+        mesh.userData.targetY = aspect < 1 ? 40 : 50; 
     }
 
     function exitDetailMode() {
         currentActiveIndex = -1;
         document.getElementById('glass-panel').classList.remove('full-open');
         document.body.classList.remove('panel-open');
-        if (activeCardUUID) { const m = cardMeshes.find(c => c.uuid === activeCardUUID); if (m) m.userData.targetY = 0; }
+        if (activeCardUUID) {
+            const m = cardMeshes.find(c => c.uuid === activeCardUUID);
+            if (m) m.userData.targetY = aspect < 1 ? -2 : 0;
+        }
         activeCardUUID = null;
     }
-
-    document.getElementById('close-btn').addEventListener('click', exitDetailMode);
-    document.querySelector('.panel-handle').addEventListener('click', exitDetailMode);
 
     function switchPreviewModel(idx) {
         const p = projects[idx]; if(!p) return;
         document.getElementById('ui-title').innerText = p.letter;
         document.getElementById('ui-subtitle').innerText = p.title;
+        projects.forEach((proj, i) => {
+            if (proj.sceneObject) {
+                proj.sceneObject.visible = (i === idx);
+                if (i === idx) {
+                    proj.sceneObject.position.y = aspect < 1 ? 7.5 : 2.0; 
+                    window.centerModelTargetScale = (aspect < 1 ? 1.5 : 2.2) * proj.normalizedScale;
+                }
+            }
+        });
     }
 
     function setupUIEvents() {
         const btn = document.getElementById('audio-toggle'); const audio = document.getElementById('bg-music'); let playing = false;
         btn.addEventListener('click', (e) => { e.stopPropagation(); playing ? audio.pause() : audio.play(); playing = !playing; document.getElementById('icon-sound-on').style.display = playing ? 'block' : 'none'; document.getElementById('icon-sound-off').style.display = playing ? 'none' : 'block'; });
+        document.getElementById('close-btn').addEventListener('click', exitDetailMode);
+        document.querySelector('.panel-handle').addEventListener('click', exitDetailMode);
     }
 
     function onMouseMove(e) { if (currentActiveIndex !== -1) return; mouse.x = (e.clientX / window.innerWidth) * 2 - 1; mouse.y = -(e.clientY / window.innerHeight) * 2 + 1; }
-    
-    function onWindowResize() { 
-        const aspect = window.innerWidth / window.innerHeight;
-        camera.aspect = aspect; 
-        camera.position.z = aspect < 1 ? 85 : 75;
-        camera.fov = aspect < 1 ? 45 : 35;
-        camera.updateProjectionMatrix(); 
-        renderer.setSize(window.innerWidth, window.innerHeight); 
-    }
+    function onWindowResize() { const aspect = window.innerWidth / window.innerHeight; camera.aspect = aspect; camera.position.z = aspect < 1 ? 112 : 75; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); }
 
     function animate() {
         requestAnimationFrame(animate);
@@ -371,22 +450,47 @@
         else { currentRotation += (targetRotation - currentRotation) * 0.15; }
         if (carouselGroup) carouselGroup.rotation.y = currentRotation;
 
-        lights.forEach((l, i) => { 
-            const offset = (i * Math.PI) / 2; 
-            l.position.set(Math.sin(time + offset)*25, 8 + Math.sin(time*1.5)*3, Math.cos(time + offset)*25); 
+        // 💡 燈光推高（Y軸推到相機上方高空高空灑落，大面積柔和變糊）
+        lights.forEach((l, i) => {
+            const offset = (i * Math.PI) / 2;
+            const moodTime = aspect < 1 ? time * 0.6 : time; 
+            l.position.set(
+                Math.sin(moodTime + offset) * 32, 
+                CAMERA_BASE_Y + 18, 
+                Math.cos(moodTime + offset) * 32
+            );
         });
 
-        const targetCamX = -mouse.x * 3; const targetCamY = mouse.y * 3 + CAMERA_BASE_Y;
-        camera.position.x += (targetCamX - camera.position.x) * 0.05; camera.position.y += (targetCamY - camera.position.y) * 0.05;
-        camera.lookAt(0, 0, 0);
+        // 融合隱形陀螺儀
+        gyroCurrentX += (gyroTargetX - gyroCurrentX) * 0.05;
+        gyroCurrentY += (gyroTargetY - gyroCurrentY) * 0.05;
+
+        const targetCamX = -mouse.x * (aspect < 1 ? 1 : 3) + gyroCurrentX;
+        const targetCamY = mouse.y * (aspect < 1 ? 1 : 3) + CAMERA_BASE_Y + gyroCurrentY;
+        camera.position.x += (targetCamX - camera.position.x) * 0.05;
+        camera.position.y += (targetCamY - camera.position.y) * 0.05;
+        camera.lookAt(0, aspect < 1 ? 5 : 0, 0);
 
         cardMeshes.forEach(m => {
             m.userData.currentY += (m.userData.targetY - m.userData.currentY) * 0.1; m.position.y = m.userData.currentY;
             if (currentActiveIndex === -1) {
                 const worldPos = new THREE.Vector3(); m.getWorldPosition(worldPos);
-                const distToFront = worldPos.distanceTo(new THREE.Vector3(0, 0, RADIUS));
-                if (distToFront < 5 && previewIndex !== m.userData.dataIndex) { switchPreviewModel(m.userData.dataIndex); previewIndex = m.userData.dataIndex; }
-                m.scale.lerp(new THREE.Vector3(distToFront < 5 ? 1.3 : 1, distToFront < 5 ? 1.3 : 1, 1), 0.1);
+                m.position.y += Math.sin(time + m.userData.originalAngle) * 0.2; 
+
+                const distToFront = worldPos.distanceTo(new THREE.Vector3(0, aspect < 1 ? -2 : 0, RADIUS));
+                if (distToFront < (aspect < 1 ? 3.5 : 5) && previewIndex !== m.userData.dataIndex) {
+                    switchPreviewModel(m.userData.dataIndex); previewIndex = m.userData.dataIndex;
+                }
+                m.scale.lerp(new THREE.Vector3(distToFront < (aspect < 1 ? 3.5 : 5) ? 1.25 : 1, distToFront < (aspect < 1 ? 3.5 : 5) ? 1.25 : 1, 1), 0.1);
+            }
+        });
+
+        projects.forEach(p => {
+            if (p.sceneObject && p.sceneObject.visible) {
+                p.sceneObject.rotation.y += 0.005;
+                const currentScale = p.sceneObject.scale.x;
+                const newScale = currentScale + (window.centerModelTargetScale - currentScale) * 0.05;
+                p.sceneObject.scale.set(newScale, newScale, newScale);
             }
         });
 
