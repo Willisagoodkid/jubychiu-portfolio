@@ -7,7 +7,7 @@
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght=300;400;700;900&family=Inter:wght=900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2 family=Noto+Sans+TC:wght@300;400;700;900&family=Inter:wght@900&display=swap" rel="stylesheet">
 
     <style>
         body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background-color: #6c5b5e; font-family: 'Inter', 'Noto Sans TC', sans-serif; touch-action: none; }
@@ -158,7 +158,6 @@
         await fetchData();
         scene = new THREE.Scene(); scene.background = new THREE.Color(SPACE_COLOR); scene.fog = new THREE.Fog(SPACE_COLOR, 40, 140);
         
-        // 💡 手機直向縮小 0.7 比例自適應
         camera = new THREE.PerspectiveCamera(aspect < 1 ? 48 : 35, aspect, 0.1, 500);
         camera.position.set(0, CAMERA_BASE_Y, aspect < 1 ? 115 : 75); 
         camera.lookAt(0, aspect < 1 ? 5 : 0, 0);
@@ -194,7 +193,6 @@
         window.addEventListener('mousedown', () => { isTouching = true; });
         window.addEventListener('mouseup', (e) => { isTouching = false; onClick(e); });
         
-        // 💡 縫合自然發生的隨視角移動傾斜機制 (陀螺儀)
         window.addEventListener('touchstart', onTouchStart, { passive: false });
         window.addEventListener('touchmove', onTouchMove, { passive: false });
         window.addEventListener('touchend', onTouchEnd);
@@ -206,21 +204,22 @@
     }
 
     function setupLightsAndFloor(studioEnvMap) {
-        // ✨【手術 1】降低環境光強度：從 1.4 大幅調暗至 0.6，找回高級暗調
-        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+        // ✨ 降低環境暗調光：環境光從 0.6 降到 0.4，將四周大範圍陰影黑下去，襯托霓虹核心
+        scene.add(new THREE.AmbientLight(0xffffff, 0.4));
         
-        // ✨【手術 2】恢復最初美美流光的物理參數：調高強度，固定在高空，配合 1.2 衰減
+        // ✨【核心光影調整】：大幅提高 decay 到 2.5（讓光速衰減、聚焦），並縮小光的極限距離（120）
+        // 這樣彩色光暈會在中央形成「高飽和度、凝聚、鮮亮」的粉紫黃橙亮點舞台核心，往外走時迅速變糊暗下，徹底消除整片慘白反光！
         const lightColors = [0xffccaa, 0xffbb99, 0xffcccc, 0xffaaee];
-        const lightIntensities = aspect < 1 ? [1100, 900, 900, 750] : [1700, 1400, 1400, 1150];
+        const lightIntensities = aspect < 1 ? [1600, 1300, 1300, 1100] : [2400, 2000, 2000, 1600];
 
         for(let i = 0; i < 4; i++) {
-            const light = new THREE.PointLight(lightColors[i], lightIntensities[i], 240);
-            light.decay = 1.2; 
+            // 第三個參數（距離）鎖定在 120 以內，強迫光暈向中心收攏
+            const light = new THREE.PointLight(lightColors[i], lightIntensities[i], 120);
+            light.decay = 2.5; // 🔥 超高物理衰減，逼出極致性感的光斑層次
             lights.push(light); scene.add(light);
         }
         
-        // ✨【手術 3】拉高地板粗糙度（roughness: 0.94）：
-        // 把強烈反光平面完全「揉碎、變糊」，徹底抹去死白光帶，找回大片大片糊化暈染的霓虹流光
+        // 地板維持極致磨砂感
         const floorGeo = new THREE.PlaneGeometry(1500, 1500);
         const floorMat = new THREE.MeshStandardMaterial({ 
             color: new THREE.Color('#44383a'), 
@@ -302,7 +301,6 @@
             const p = projects[i % projects.length];
             const angle = (i / CARD_COUNT) * Math.PI * 2;
             
-            // 💡 隔絕外部光源變色：卡片全面維持 MeshBasicMaterial 材質 ！
             const mesh = new THREE.Mesh(
                 new THREE.PlaneGeometry(3.6, 2.4), 
                 new THREE.MeshBasicMaterial({ 
@@ -456,14 +454,14 @@
         else { currentRotation += (targetRotation - currentRotation) * 0.15; }
         if (carouselGroup) carouselGroup.rotation.y = currentRotation;
 
-        // 💡 ✨ 點光源高度鎖定在高空向下灑落，配合高粗糙度地板大面積變糊暈染 ✨ 💡
+        // 💡 ✨【微調精髓】：縮小點光源環繞半徑（從 32 縮小至 15），並微微拉低高度，強迫光斑在中心凝聚爆發！ ✨ 💡
         lights.forEach((l, i) => {
             const offset = (i * Math.PI) / 2;
             const moodTime = aspect < 1 ? time * 0.6 : time; 
             l.position.set(
-                Math.sin(moodTime + offset) * 32, 
-                CAMERA_BASE_Y + 18, 
-                Math.cos(moodTime + offset) * 32
+                Math.sin(moodTime + offset) * 15, 
+                CAMERA_BASE_Y + 4, 
+                Math.cos(moodTime + offset) * 15
             );
         });
 
