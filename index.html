@@ -144,7 +144,7 @@
     
     let isTouching = false, touchStartX = 0, touchStartY = 0, lastTouchX = 0, lastTouchY = 0, touchStartTime = 0;
     const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2(), manager = new THREE.LoadingManager();
-    let lights = [], dirLight;
+    let lights = [], dirLight, studioEnvMap;
 
     let gyroTargetX = 0, gyroTargetY = 0, gyroCurrentX = 0, gyroCurrentY = 0, gyroEnabled = false;
 
@@ -156,13 +156,14 @@
         CAMERA_BASE_Y = aspect < 1 ? 26 : 22;
 
         await fetchData();
-        scene = new THREE.Scene(); 
-        scene.background = new THREE.Color(SPACE_COLOR); 
-        scene.fog = new THREE.Fog(SPACE_COLOR, 40, 140);
+        scene = new THREE.Scene(); scene.background = new THREE.Color(SPACE_COLOR); scene.fog = new THREE.Fog(SPACE_COLOR, 40, 140);
         
         camera = new THREE.PerspectiveCamera(aspect < 1 ? 48 : 35, aspect, 0.1, 500);
         camera.position.set(0, CAMERA_BASE_Y, aspect < 1 ? 115 : 75); 
         camera.lookAt(0, aspect < 1 ? 5 : 0, 0);
+
+        camera.layers.enable(0);
+        camera.layers.enable(1);
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -174,9 +175,9 @@
         document.body.appendChild(renderer.domElement);
 
         const pmremGenerator = new THREE.PMREMGenerator(renderer);
-        const studioEnvMap = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+        studioEnvMap = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
 
-        setupLightsAndBackground(studioEnvMap);
+        setupLightsAndFloor(studioEnvMap);
         createCarousel();
         
         window.centerModelTargetScale = aspect < 1 ? 1.5 : 2.2;
@@ -189,8 +190,10 @@
         window.addEventListener('resize', onWindowResize);
         window.addEventListener('wheel', (e) => { if(currentActiveIndex === -1) targetRotation += e.deltaY * 0.0008; });
         window.addEventListener('mousemove', onMouseMove);
+        
         window.addEventListener('mousedown', () => { isTouching = true; });
         window.addEventListener('mouseup', (e) => { isTouching = false; onClick(e); });
+        
         window.addEventListener('touchstart', onTouchStart, { passive: false });
         window.addEventListener('touchmove', onTouchMove, { passive: false });
         window.addEventListener('touchend', onTouchEnd);
@@ -201,11 +204,11 @@
         animate();
     }
 
-    function setupLightsAndBackground(studioEnvMap) {
-        // 1. 還原最初的環境光
-        scene.add(new THREE.AmbientLight(0xffffff, 1.5));
+    function setupLightsAndFloor(studioEnvMap) {
+        // 全局基礎環境光（壓低一點讓對比更強烈）
+        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
         
-        // 2. 專門負責生成陰影的平行光（隱藏光源感，只借用影子）
+        // 生成模型陰影的平行光
         dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
         dirLight.position.set(0, 40, 20);
         dirLight.castShadow = true;
@@ -219,39 +222,38 @@
         dirLight.shadow.bias = -0.0005;
         scene.add(dirLight);
 
-        // 3. ✨ 徹底還原第一版：最完美的點光源物理參數
+        // 🔥【貼地爆發核心 1】：提高光強，縮小照射距離（150），讓光速衰減聚焦
         const lightColors = [0xffccaa, 0xffbb99, 0xffcccc, 0xffaaee];
-        const lightIntensities = aspect < 1 ? [1800, 1800, 1800, 1800] : [2500, 2500, 2500, 2500];
+        const lightIntensities = aspect < 1 ? [2000, 1800, 1800, 1500] : [3000, 2600, 2600, 2000];
 
         for(let i = 0; i < 4; i++) {
-            const light = new THREE.PointLight(lightColors[i], lightIntensities[i], 200);
-            light.decay = 2.0; 
+            const light = new THREE.PointLight(lightColors[i], lightIntensities[i], 150);
+            light.decay = 1.8; // 適度衰減，創造中心亮、外圍糊的質感
             lights.push(light); scene.add(light);
         }
         
-        // 4. ✨ 終極優雅解法：隱形陰影玻璃（ShadowMaterial）
-        // 完全透明，唯一作用是接住模型的影子，絕不阻擋下方背景的美麗流光
-        const shadowGeo = new THREE.PlaneGeometry(1000, 1000);
-        const shadowMat = new THREE.ShadowMaterial({ opacity: 0.35 });
-        const shadowFloor = new THREE.Mesh(shadowGeo, shadowMat);
-        shadowFloor.rotation.x = -Math.PI / 2; 
-        shadowFloor.position.y = aspect < 1 ? -6.0 : -4.0; 
-        shadowFloor.receiveShadow = true; 
-        scene.add(shadowFloor);
-        
-        // 5. ✨ 回歸最初的無界限球體天幕（SphereGeometry）
-        // 沒有實體地板擋路，光線自然在球體內壁漫反射，還原無邊際夢幻漸層！
-        const bgWallGeo = new THREE.SphereGeometry(80, 32, 32);
-        const bgWallMat = new THREE.MeshStandardMaterial({ 
-            color: 0x554649, 
-            side: THREE.BackSide, 
-            roughness: 0.95 
+        // 🔥【貼地爆發核心 2】：緞面材質地板，找回高對比光斑與流動感
+        // 將 roughness 從極致霧面降到 0.6，金屬度提升到 0.2。
+        // 這樣地面就不再是死灰的漫反射板，而是會漂亮地映照出點光源的軌跡，充滿流動感！
+        const floorGeo = new THREE.PlaneGeometry(1500, 1500);
+        const floorMat = new THREE.MeshStandardMaterial({ 
+            color: new THREE.Color('#46383a'), 
+            roughness: 0.6, 
+            metalness: 0.2,
+            envMap: studioEnvMap
         });
-        const bgWall = new THREE.Mesh(bgWallGeo, bgWallMat); 
-        scene.add(bgWall);
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2; 
+        floor.position.y = aspect < 1 ? -6.0 : -4.0; 
+        floor.receiveShadow = true; 
+        scene.add(floor);
+        
+        // 背景大球殼：消除邊界
+        const bgWallGeo = new THREE.SphereGeometry(85, 32, 32);
+        const bgWallMat = new THREE.MeshStandardMaterial({ color: 0x5a4a4d, side: THREE.BackSide, roughness: 0.9 });
+        const bgWall = new THREE.Mesh(bgWallGeo, bgWallMat); scene.add(bgWall);
 
-        centerModelGroup = new THREE.Group(); 
-        scene.add(centerModelGroup);
+        centerModelGroup = new THREE.Group(); scene.add(centerModelGroup);
     }
 
     async function fetchData() {
@@ -283,7 +285,7 @@
                 loader.load(project.model, (gltf) => {
                     const model = gltf.scene;
                     
-                    // 開啟投影，模型不被鎖死圖層
+                    // 所有物件置於 Layer 0，接受全局光源投影
                     model.traverse(n => {
                         if(n.isMesh) {
                             n.castShadow = true;
@@ -464,20 +466,20 @@
 
     function animate() {
         requestAnimationFrame(animate);
-        const time = Date.now() * 0.0002;
+        const time = Date.now() * 0.0004; // ✨ 提高時間乘數，讓流光速度變快、更活潑
         
         if (!isTouching) { rotationVelocity = (targetRotation - currentRotation) * 0.05; currentRotation += rotationVelocity; } 
         else { currentRotation += (targetRotation - currentRotation) * 0.15; }
         if (carouselGroup) carouselGroup.rotation.y = currentRotation;
 
-        // ✨ 點光源還原最初在天幕高空的平滑運動，重現溫柔漸層
+        // 🔥【貼地爆發核心 3】：光源高度壓低，貼近地面穿梭
         lights.forEach((l, i) => {
             const offset = (i * Math.PI) / 2;
-            const moodTime = aspect < 1 ? time * 0.6 : time; 
+            // 將高度從 CAMERA_BASE_Y + 18 壓低到 CAMERA_BASE_Y - 4，並縮小環繞半徑 (18)
             l.position.set(
-                Math.sin(moodTime + offset) * 20, 
-                30, 
-                Math.cos(moodTime + offset) * 20
+                Math.sin(time + offset) * 18, 
+                CAMERA_BASE_Y - 4, 
+                Math.cos(time + offset) * 18
             );
         });
 
