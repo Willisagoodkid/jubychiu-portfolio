@@ -7,7 +7,7 @@
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&family=Inter:wght@900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght=300;400;700;900&family=Inter:wght@900&display=swap" rel="stylesheet">
 
     <style>
         body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background-color: #6c5b5e; font-family: 'Inter', 'Noto Sans TC', sans-serif; touch-action: none; }
@@ -135,31 +135,29 @@
 
 <script type="module">
     import * as THREE from 'three';
-    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-    import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
-    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
     const RADIUS = 20; const CARD_COUNT = 25; const SPACE_COLOR = '#6c5b5e';
-    let scene, camera, renderer, carouselGroup, centerModelGroup, cardMeshes = [], projects = [];
+    let scene, camera, renderer, carouselGroup, cardMeshes = [], projects = [];
     let targetRotation = 0, currentRotation = 0, rotationVelocity = 0;
-    let currentActiveIndex = -1, activeCardUUID = null, previewIndex = 0, centerModelTargetScale = 2.0;
+    let currentActiveIndex = -1, activeCardUUID = null, previewIndex = 0;
     
     let isTouching = false, touchStartX = 0, touchStartY = 0, lastTouchX = 0, lastTouchY = 0;
     let touchStartTime = 0;
     const CAMERA_BASE_Y = 22;
-    const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2(), manager = new THREE.LoadingManager();
-    let lights = [], studioEnvMap;
+    const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2();
+    let lights = [];
 
     init();
 
     async function init() {
         await fetchData();
-        scene = new THREE.Scene(); scene.background = new THREE.Color(SPACE_COLOR); scene.fog = new THREE.Fog(SPACE_COLOR, 40, 140);
+        scene = new THREE.Scene(); 
+        scene.background = new THREE.Color(SPACE_COLOR); 
+        scene.fog = new THREE.Fog(SPACE_COLOR, 40, 140);
         
         const aspect = window.innerWidth / window.innerHeight;
         
-        // 💡 手機直向時 (aspect < 1)，視野擴大到 45 度，Z軸稍微退到 85。
-        // 圓環物理半徑不動，視覺上在手機端自動縮小至 1/2，絕不穿牆，更不會影響電腦版！
+        // 💡 手機直向時 (aspect < 1)FOV 擴大到 45 度，Z軸後退至 85，讓手機圓圈自然內縮 1/2，不遮字不穿牆！
         camera = new THREE.PerspectiveCamera(aspect < 1 ? 45 : 35, aspect, 0.1, 300);
         camera.position.set(0, CAMERA_BASE_Y, aspect < 1 ? 85 : 75); 
         camera.lookAt(0, 0, 0);
@@ -167,17 +165,13 @@
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.shadowMap.enabled = true;
+        
+        // 💡 強制停用會把彩色強光洗白的自動調色盤對映射，鎖回 100% 正確的色彩空間！
+        renderer.toneMapping = THREE.NoToneMapping; 
         document.body.appendChild(renderer.domElement);
 
-        const pmremGenerator = new THREE.PMREMGenerator(renderer);
-        studioEnvMap = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
-
         setupLightsAndFloor();
-        
-        // 💡 異步強制解鎖：先建立卡片輪盤，並將模型載入往後擺，即使模型下載慢也絕不影響光感！
         createCarousel();
-        await preloadAllModels(); 
         switchPreviewModel(0); 
 
         window.addEventListener('resize', onWindowResize);
@@ -198,19 +192,18 @@
     }
 
     function setupLightsAndFloor() {
-        // 完全還原最對的 1.8 環境光感
+        // ✨ 環境光強度回到完美比例
         scene.add(new THREE.AmbientLight(0xffffff, 1.8));
         
+        // ✨ 強制打亮全域深邃無邊界背景的黃、紫、橘、粉色流光點光源
         const colors = [0xffd54f, 0xc084fc, 0xff8a65, 0xf472b6];
         for(let i = 0; i < 4; i++) {
-            const light = new THREE.PointLight(colors[i], 2500, 200);
+            const light = new THREE.PointLight(colors[i], 3500, 200);
             lights.push(light); scene.add(light);
         }
         
         const floor = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.ShadowMaterial({ opacity: 0.15 }));
         floor.rotation.x = -Math.PI / 2; floor.position.y = -4.0; floor.receiveShadow = true; scene.add(floor);
-        
-        centerModelGroup = new THREE.Group(); scene.add(centerModelGroup);
     }
 
     async function fetchData() {
@@ -227,33 +220,8 @@
                 const r = await fetch(`txts/${name}.txt?t=${Date.now()}`); 
                 if(r.ok) desc = await r.text();
             } catch(e){}
-            return { id: index, letter: name.toUpperCase(), title: customTitle, image: `images/${name}.png?t=${Date.now()}`, model: `models/${name}.glb`, desc: desc, sceneObject: null, normalizedScale: 1 };
+            return { id: index, letter: name.toUpperCase(), title: customTitle, image: `images/${name}.png?t=${Date.now()}`, desc: desc };
         }));
-    }
-
-    async function preloadAllModels() {
-        const loader = new GLTFLoader(manager);
-        const dracoLoader = new DRACOLoader();
-        dracoLoader.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
-        loader.setDRACOLoader(dracoLoader);
-        
-        // 💡 核心安全鎖：如果任何一隻模型載入超過 700 毫秒，就強制通關，不准它卡死畫面！
-        const promises = projects.map((project) => {
-            return new Promise((resolve) => {
-                const timer = setTimeout(() => resolve(), 700);
-                loader.load(project.model, (gltf) => {
-                    clearTimeout(timer);
-                    const model = gltf.scene;
-                    model.traverse(n => { if(n.isMesh) { n.castShadow = true; n.material.envMap = studioEnvMap; n.layers.set(1); } });
-                    const box = new THREE.Box3().setFromObject(model);
-                    const size = new THREE.Vector3(); box.getSize(size);
-                    project.normalizedScale = 4.0 / Math.max(size.x, size.y, size.z);
-                    model.visible = false; centerModelGroup.add(model); project.sceneObject = model;
-                    resolve();
-                }, undefined, () => { clearTimeout(timer); resolve(); });
-            });
-        });
-        await Promise.all(promises);
     }
 
     function createCarousel() {
@@ -263,8 +231,16 @@
             const p = projects[i % projects.length];
             const angle = (i / CARD_COUNT) * Math.PI * 2;
             
-            // 💡 保持卡片完全不受背景 PointLight 染色變白的基礎抗光材質
-            const mesh = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 2.4), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.7, side: THREE.DoubleSide }));
+            // 💡 鎖定最漂亮的微暗透明玻璃材質，完全與背景點光源分離，絕不因為轉動而變白褪色！
+            const mesh = new THREE.Mesh(
+                new THREE.PlaneGeometry(3.6, 2.4), 
+                new THREE.MeshBasicMaterial({ 
+                    color: 0xffffff,
+                    transparent: true, 
+                    opacity: 0.7, 
+                    side: THREE.DoubleSide
+                })
+            );
             texLoader.load(p.image, (t) => { mesh.material.map = t; mesh.material.needsUpdate = true; });
             
             mesh.position.set(Math.sin(angle)*RADIUS, 0, Math.cos(angle)*RADIUS);
@@ -274,7 +250,6 @@
         }
     }
 
-    // 💡 觸控感應重寫：上下滑動、左右滑動皆可極致滑順地微調輪盤旋轉
     function onTouchStart(e) { 
         isTouching = true; 
         touchStartX = e.touches[0].clientX; 
@@ -293,6 +268,7 @@
         const deltaX = currentX - lastTouchX;
         const deltaY = currentY - lastTouchY;
         
+        // ✨ 手指上下、左右划動都能完美順暢轉動輪盤
         targetRotation += deltaX * 0.007 + deltaY * 0.004; 
         
         lastTouchX = currentX;
@@ -305,14 +281,13 @@
         const duration = Date.now() - touchStartTime;
         const totalDist = Math.sqrt(Math.pow(lastTouchX - touchStartX, 2) + Math.pow(lastTouchY - touchStartY, 2));
         
-        // 💡 擴大防抖物理距離判定到 15px：手指壓下百發百中彈出內頁
         if (duration < 250 && totalDist < 15) {
             onClick(e);
         }
     }
 
     function onClick(e) {
-        // 💡 內頁打開後，點擊非內容的任何透明空白處，面板立刻優雅退下
+        // ✨ 點選任何內頁框之外的空白區域，面板立刻退下
         if (currentActiveIndex !== -1) {
             const path = e.composedPath ? e.composedPath() : [];
             const clickedOnContent = path.some(el => el.classList && el.classList.contains('panel-content'));
@@ -371,15 +346,6 @@
         const p = projects[idx]; if(!p) return;
         document.getElementById('ui-title').innerText = p.letter;
         document.getElementById('ui-subtitle').innerText = p.title;
-        projects.forEach((proj, i) => {
-            if (proj.sceneObject) {
-                proj.sceneObject.visible = (i === idx);
-                if (i === idx) {
-                    proj.sceneObject.position.y = 1.3;
-                    centerModelTargetScale = proj.normalizedScale * (currentActiveIndex===-1 ? 2.0 : 2.5);
-                }
-            }
-        });
     }
 
     function setupUIEvents() {
@@ -424,7 +390,6 @@
             }
         });
 
-        projects.forEach(p => { if (p.sceneObject && p.sceneObject.visible) { p.sceneObject.rotation.y += 0.005; const s = p.sceneObject.scale.x + (centerModelTargetScale - p.sceneObject.scale.x) * 0.05; p.sceneObject.scale.set(s, s, s); } });
         renderer.render(scene, camera);
     }
 </script>
