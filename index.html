@@ -158,7 +158,7 @@
         await fetchData();
         scene = new THREE.Scene(); scene.background = new THREE.Color(SPACE_COLOR); scene.fog = new THREE.Fog(SPACE_COLOR, 40, 140);
         
-        // 💡 手機直向內縮 0.7 比例自適應配置
+        // 💡 手機直向縮小 0.7 比例自適應
         camera = new THREE.PerspectiveCamera(aspect < 1 ? 48 : 35, aspect, 0.1, 500);
         camera.position.set(0, CAMERA_BASE_Y, aspect < 1 ? 115 : 75); 
         camera.lookAt(0, aspect < 1 ? 5 : 0, 0);
@@ -171,7 +171,6 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.shadowMap.enabled = true;
         
-        // 🔥 鎖定 NoToneMapping，釋放黃紫流體背景色澤
         renderer.toneMapping = THREE.NoToneMapping;
         document.body.appendChild(renderer.domElement);
 
@@ -207,12 +206,12 @@
     }
 
     function setupLightsAndFloor(studioEnvMap) {
-        // ✨【關鍵手術 1】降低全域環境光：從 1.4 大幅降低至 0.6，瞬間壓低場景死白
+        // ✨【手術 1】降低環境光強度：從 1.4 大幅調暗至 0.6，找回高級暗調
         scene.add(new THREE.AmbientLight(0xffffff, 0.6));
         
-        // ✨【關鍵手術 2】微調點光源強度：將強度（Intensity）重新修正為適中數值，高空向下投影
+        // ✨【手術 2】恢復最初美美流光的物理參數：調高強度，固定在高空，配合 1.2 衰減
         const lightColors = [0xffccaa, 0xffbb99, 0xffcccc, 0xffaaee];
-        const lightIntensities = aspect < 1 ? [1200, 1000, 1000, 800] : [1800, 1500, 1500, 1200];
+        const lightIntensities = aspect < 1 ? [1100, 900, 900, 750] : [1700, 1400, 1400, 1150];
 
         for(let i = 0; i < 4; i++) {
             const light = new THREE.PointLight(lightColors[i], lightIntensities[i], 240);
@@ -220,8 +219,8 @@
             lights.push(light); scene.add(light);
         }
         
-        // ✨【關鍵手術 3】提升地板磨砂感（roughness: 0.94）：
-        // 把強烈反光完全「揉碎、變糊」，讓亮白色的怪帶子徹底擴散、轉化為高級的低對比霓虹暈染
+        // ✨【手術 3】拉高地板粗糙度（roughness: 0.94）：
+        // 把強烈反光平面完全「揉碎、變糊」，徹底抹去死白光帶，找回大片大片糊化暈染的霓虹流光
         const floorGeo = new THREE.PlaneGeometry(1500, 1500);
         const floorMat = new THREE.MeshStandardMaterial({ 
             color: new THREE.Color('#44383a'), 
@@ -234,7 +233,7 @@
         floor.receiveShadow = true; 
         scene.add(floor);
         
-        // 巨型感光背景牆，完美捕捉高空灑落的漸層
+        // 巨型感光背景球體牆
         const bgWallGeo = new THREE.SphereGeometry(85, 32, 32);
         const bgWallMat = new THREE.MeshStandardMaterial({ color: 0x554649, side: THREE.BackSide, roughness: 0.95 });
         const bgWall = new THREE.Mesh(bgWallGeo, bgWallMat); scene.add(bgWall);
@@ -364,7 +363,7 @@
     function onTouchEnd(e) { 
         isTouching = false; 
         const duration = Date.now() - touchStartTime;
-        const totalDist = Math.sqrt(Math.pow(lastTouchX - touchStartX, 2) + Math.pow(lastTouchY - touchStartY, 2));
+        const totalDist = Math.sqrt(Math.pow(lastTouchX - touchStartX, 2) * Math.pow(lastTouchY - touchStartY, 2));
         if (duration < 250 && totalDist < 15) onClick(e); 
     }
 
@@ -457,7 +456,7 @@
         else { currentRotation += (targetRotation - currentRotation) * 0.15; }
         if (carouselGroup) carouselGroup.rotation.y = currentRotation;
 
-        // ✨ 💡 點光源高度鎖定在高空向下灑落，配合高粗糙度地板大面積變糊暈染 ✨ 💡
+        // 💡 ✨ 點光源高度鎖定在高空向下灑落，配合高粗糙度地板大面積變糊暈染 ✨ 💡
         lights.forEach((l, i) => {
             const offset = (i * Math.PI) / 2;
             const moodTime = aspect < 1 ? time * 0.6 : time; 
