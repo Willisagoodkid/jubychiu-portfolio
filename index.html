@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Juby chiuuuuu studio <3 .</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -280,7 +280,6 @@
     const RADIUS = 20;            
     const MODEL_FIXED_Y = 1.3;      
     const CARD_COUNT = 25;        
-    const API_URL = "";           
     const SPACE_COLOR = '#6c5b5e';
 
     let scene, camera, renderer;
@@ -306,6 +305,10 @@
 
     let lights = [];
     let studioEnvMap;
+
+    // 💡 修正手機版轉動所需的座標快取
+    let isDragging = false;
+    let previousTouchX = 0;
 
     init();
 
@@ -346,6 +349,24 @@
         window.addEventListener('wheel', onWheel);
         window.addEventListener('mousemove', onMouseMove);
         window.addEventListener('click', onClick);
+
+        // 💡 修正滑鼠拖動與手機觸控轉動邏輯，完美解決手機版轉不動的Bug
+        window.addEventListener('mousedown', (e) => { isDragging = true; });
+        window.addEventListener('mouseup', () => { isDragging = false; });
+        
+        window.addEventListener('touchstart', (e) => { 
+            isDragging = true; 
+            previousTouchX = e.touches[0].clientX; 
+        }, { passive: true });
+        
+        window.addEventListener('touchmove', (e) => {
+            if (!isDragging || currentActiveIndex !== -1) return;
+            const deltaX = e.touches[0].clientX - previousTouchX;
+            targetRotation += deltaX * 0.006; // ✨ 觸控直接增加旋轉目標
+            previousTouchX = e.touches[0].clientX;
+        }, { passive: true });
+        
+        window.addEventListener('touchend', () => { isDragging = false; });
 
         document.getElementById('brand').addEventListener('click', (e) => {
             e.stopPropagation();
@@ -396,7 +417,7 @@
 
         const loaderDiv = document.getElementById('loader');
         loaderDiv.style.opacity = 0;
-        setTimeout(() => loaderDiv.remove(), 500);
+        setTimeout(() => loaderDivDiv.remove(), 500);
 
         animate();
     }
@@ -454,22 +475,20 @@
         status.innerText = "FETCHING DATA...";
         try {
             const nocache = new Date().getTime();
-            
-            // ✨✨✨ 關鍵修改：捨棄 Python API，直接寫死你有的資料夾 ✨✨✨
-            // 如果你的模型是 a.glb, b.glb, c.glb, d.glb, e.glb 這裡就寫成這樣
+            // 💡 修正關鍵：移除原本多餘的 API_URL 前綴，使相對路徑完全對齊 GitHub 結構
             const items = ['a', 'b', 'c', 'd', 'e']; 
 
             projects = await Promise.all(items.map(async (name, index) => {
                 let desc = "";
                 let customTitle = name.toUpperCase(); 
                 
-                // 自訂大標題
-                if (name === 'a') {
-                    customTitle = "JUBY 2014"; 
-                }
+                if (name === 'a') customTitle = "JUBY 2014"; 
+                if (name === 'b') customTitle = "JUBY FALL"; 
+                if (name === 'c') customTitle = "JUBY DANCE"; 
+                if (name === 'd') customTitle = "JUBY STUDIO"; 
 
                 try {
-                    const r = await fetch(`${API_URL}/txts/${name}.txt?t=${nocache}`);
+                    const r = await fetch(`txts/${name}.txt?t=${nocache}`);
                     if(r.ok) desc = await r.text();
                 } catch(e){}
 
@@ -477,8 +496,8 @@
                     id: index,
                     letter: name.toUpperCase(), 
                     title: customTitle, 
-                    image: `${API_URL}/images/${name}.png?t=${nocache}`, 
-                    model: `${API_URL}/models/${name}.glb`,
+                    image: `images/${name}.png?t=${nocache}`, 
+                    model: `models/${name}.glb`,
                     desc: desc,
                     sceneObject: null,
                     normalizedScale: 1 
@@ -711,12 +730,13 @@
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
         
-        const targetCamX = -mouse.x * 4; 
-        const targetCamY = mouse.y * 4 + CAMERA_BASE_Y;
-        
-        camera.position.x += (targetCamX - camera.position.x) * 0.05;
-        camera.position.y += (targetCamY - camera.position.y) * 0.05;
-        camera.lookAt(0, 0, 0);
+        if (!isDragging) {
+            const targetCamX = -mouse.x * 4; 
+            const targetCamY = mouse.y * 4 + CAMERA_BASE_Y;
+            camera.position.x += (targetCamX - camera.position.x) * 0.05;
+            camera.position.y += (targetCamY - camera.position.y) * 0.05;
+            camera.lookAt(0, 0, 0);
+        }
     }
 
     function animate() {
@@ -741,7 +761,13 @@
             lights[3].position.y = 12 - Math.cos(time * 2) * 2;
         }
 
-        currentRotation += (targetRotation - currentRotation) * 0.06;
+        // 💡 修正滑鼠與手動拖拽累加
+        if (isDragging) {
+            currentRotation += (targetRotation - currentRotation) * 0.2;
+        } else {
+            currentRotation += (targetRotation - currentRotation) * 0.06;
+        }
+        
         if (carouselGroup) {
             carouselGroup.rotation.y = currentRotation;
         }
