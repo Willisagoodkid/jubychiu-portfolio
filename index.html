@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Juby chiuuuuu studio <3 .</title>
+    <title>Juby chiuuuuu studio &lt;3 .</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com">
@@ -191,9 +191,10 @@
     const mouse = new THREE.Vector2();
 
     let lights = [], studioEnvMap;
+    let ambientLight, topLight;
     let isDragging = false, touchStartTime = 0, touchStartX = 0, touchStartY = 0, previousTouchX = 0;
     
-    // 視差動態座標（同時支援滑鼠、手機滑動與陀螺儀）
+    // 視差動態座標
     let parallaxTargetX = 0;
     let parallaxTargetY = 0;
 
@@ -249,9 +250,9 @@
             targetRotation += deltaX * 0.006;
             previousTouchX = currentX;
 
-            // 手機滑動時產生自然的微視差（限制安全範圍）
-            parallaxTargetX = ((currentX / window.innerWidth) * 2 - 1) * -2.5;
-            parallaxTargetY = -((currentY / window.innerHeight) * 2 - 1) * 2.5;
+            // 觸控時產生更明顯且自然的相機跟隨微動
+            parallaxTargetX = ((currentX / window.innerWidth) * 2 - 1) * -3.5;
+            parallaxTargetY = -((currentY / window.innerHeight) * 2 - 1) * 3.5;
         }, { passive: true });
 
         window.addEventListener('touchend', (e) => {
@@ -266,20 +267,6 @@
                 performRaycast(touchEndX, touchEndY);
             }
         });
-
-        // 支援手機體感晃動（陀螺儀）
-        if (window.DeviceOrientationEvent && isMobile) {
-            window.addEventListener('deviceorientation', (e) => {
-                if (currentActiveIndex !== -1 || isDragging) return;
-                // gamma: 左右傾斜 (-90 ~ 90), beta: 前後傾斜 (-180 ~ 180)
-                if (e.gamma !== null && e.beta !== null) {
-                    const tiltX = Math.max(-25, Math.min(25, e.gamma));
-                    const tiltY = Math.max(15, Math.min(65, e.beta)) - 40;
-                    parallaxTargetX = -(tiltX / 25) * 2.5;
-                    parallaxTargetY = (tiltY / 25) * 2.5;
-                }
-            }, { passive: true });
-        }
 
         setupUIEvents();
 
@@ -305,10 +292,12 @@
     }
 
     function setupLightsAndFloor() {
-        const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
+        // 手機版環境光加倍亮 (3.0 vs 1.5)
+        ambientLight = new THREE.AmbientLight(0xffffff, isMobile ? 3.0 : 1.5);
         scene.add(ambientLight);
 
-        const topLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        // 手機版頂燈加倍亮 (1.0 vs 0.5)
+        topLight = new THREE.DirectionalLight(0xffffff, isMobile ? 1.0 : 0.5);
         topLight.position.set(0, 40, 0);
         topLight.castShadow = true;
         topLight.shadow.mapSize.width = 512;
@@ -319,7 +308,8 @@
         scene.add(topLight);
 
         const colors = [0xffd54f, 0xc084fc, 0xff8a65, 0xf472b6]; 
-        const intensities = [2500, 2500, 1800, 1800]; 
+        // 手機版點光源亮度翻倍
+        const intensities = isMobile ? [5000, 5000, 3600, 3600] : [2500, 2500, 1800, 1800]; 
         
         for(let i = 0; i < 4; i++) {
             const light = new THREE.PointLight(colors[i], intensities[i], 200);
@@ -558,6 +548,12 @@
         CAMERA_BASE_Y = isMobile ? 24 : 22;
         CAMERA_BASE_Z = isMobile ? 85 : 75;
 
+        // 動態切換手機與電腦亮度
+        if (ambientLight) ambientLight.intensity = isMobile ? 3.0 : 1.5;
+        if (topLight) topLight.intensity = isMobile ? 1.0 : 0.5;
+        const intensities = isMobile ? [5000, 5000, 3600, 3600] : [2500, 2500, 1800, 1800];
+        lights.forEach((l, i) => { l.intensity = intensities[i]; });
+
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.position.set(0, CAMERA_BASE_Y, CAMERA_BASE_Z);
         camera.lookAt(0, 0, 0);
@@ -605,13 +601,18 @@
             currentRotation += (targetRotation - currentRotation) * 0.2;
         } else {
             currentRotation += (targetRotation - currentRotation) * 0.06;
+            // 手指放開時，相機視差逐漸平滑歸零
+            if (isMobile) {
+                parallaxTargetX += (0 - parallaxTargetX) * 0.05;
+                parallaxTargetY += (0 - parallaxTargetY) * 0.05;
+            }
         }
         
         if (carouselGroup) {
             carouselGroup.rotation.y = currentRotation;
         }
 
-        // 平滑相機微動視差插值（手機與電腦共用）
+        // 平滑相機微動視差插值
         if (currentActiveIndex === -1) {
             const targetCamX = parallaxTargetX;
             const targetCamY = CAMERA_BASE_Y + parallaxTargetY;
