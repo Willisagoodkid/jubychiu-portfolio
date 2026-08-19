@@ -219,6 +219,7 @@
     let scene, camera, renderer;
     let carouselGroup, cardMeshes = [], projects = [];
     let centerFloatingCard; 
+    let curvedBackdropScreen; // 後方天空巨型圓弧投影幕
     let previewIndex = 0;
     let targetRotation = 0, currentRotation = 0, currentActiveIndex = -1, activeCardUUID = null;
 
@@ -244,7 +245,7 @@
 
         scene = new THREE.Scene();
         scene.background = new THREE.Color(SPACE_COLOR);
-        scene.fog = new THREE.Fog(SPACE_COLOR, 40, 150); 
+        scene.fog = new THREE.Fog(SPACE_COLOR, 40, 160); 
 
         camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 400);
         camera.position.set(0, CAMERA_BASE_Y, CAMERA_BASE_Z); 
@@ -261,6 +262,7 @@
         studioEnvMap = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
 
         setupLightsAndFloor();
+        createCurvedBackdropScreen();
         createCarousel();
         createCenterFloatingCard();
 
@@ -303,7 +305,6 @@
             }
         });
 
-        // 頁面切換或螢幕鎖定自動暫停音樂
         document.addEventListener('visibilitychange', () => {
             const bgMusic = document.getElementById('bg-music');
             if (bgMusic && document.hidden) {
@@ -413,6 +414,32 @@
         }
     }
 
+    // 建立後方天空巨型圓弧半透明投影幕
+    function createCurvedBackdropScreen() {
+        const radius = 48;
+        const height = isMobile ? 32 : 26;
+        const arcAngle = Math.PI * 0.72; // 130 度的半環弧面
+
+        // 圓柱弧面
+        const geometry = new THREE.CylinderGeometry(
+            radius, radius, height, 48, 1, true, Math.PI - arcAngle / 2, arcAngle
+        );
+
+        const material = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            side: THREE.BackSide, // 內側受光顯示
+            transparent: true,
+            opacity: 0.38,        // 空靈半透明質感
+            map: projects[0] ? projects[0].texture : null,
+            depthWrite: false
+        });
+
+        curvedBackdropScreen = new THREE.Mesh(geometry, material);
+        curvedBackdropScreen.position.set(0, isMobile ? 12 : 9, -2);
+        curvedBackdropScreen.scale.x = -1; // 翻轉貼圖以正確正面投影
+        scene.add(curvedBackdropScreen);
+    }
+
     function createCarousel() {
         carouselGroup = new THREE.Group();
         scene.add(carouselGroup);
@@ -456,7 +483,6 @@
         }
     }
 
-    // 建立中間主卡（保證手機視角清晰朝向相機）
     function createCenterFloatingCard() {
         const cardW = isMobile ? 8.0 : 6.6;
         const cardH = isMobile ? 5.2 : 4.4;
@@ -478,9 +504,16 @@
     function switchPreview(dataIndex) {
         previewIndex = dataIndex;
         updateUIText(dataIndex);
-        if (centerFloatingCard && projects[dataIndex]) {
-            centerFloatingCard.material.map = projects[dataIndex].texture;
-            centerFloatingCard.material.needsUpdate = true;
+        if (projects[dataIndex]) {
+            // 同步切換中間主卡與後方巨幅弧形天幕
+            if (centerFloatingCard) {
+                centerFloatingCard.material.map = projects[dataIndex].texture;
+                centerFloatingCard.material.needsUpdate = true;
+            }
+            if (curvedBackdropScreen) {
+                curvedBackdropScreen.material.map = projects[dataIndex].texture;
+                curvedBackdropScreen.material.needsUpdate = true;
+            }
         }
     }
 
@@ -566,7 +599,6 @@
     }
 
     function setupUIEvents() {
-        // 點擊左上大標強制真實刷新
         const brandEl = document.getElementById('brand');
         const triggerReload = (e) => {
             e.preventDefault();
@@ -583,7 +615,6 @@
         const iconOn = document.getElementById('icon-sound-on');
         const iconOff = document.getElementById('icon-sound-off');
 
-        // 音樂手動獨立開關：杜絕任何觸控自動干擾
         const toggleMusic = (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -680,13 +711,20 @@
             }
         }
 
-        // 中間主卡呼吸浮動並始終正面微迎鏡頭
+        // 中間主卡呼吸浮動
         if (centerFloatingCard) {
             centerFloatingCard.position.y = (isMobile ? 2.5 : 1.3) + Math.sin(time * 4) * 0.3;
             centerFloatingCard.rotation.y = Math.sin(time * 2) * 0.08;
-            centerFloatingCard.rotation.x = isMobile ? 0.18 : 0; // 手機俯角迎光微傾
+            centerFloatingCard.rotation.x = isMobile ? 0.18 : 0;
             const targetScale = currentActiveIndex === -1 ? 1.0 : 0.001;
             centerFloatingCard.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
+        }
+
+        // 後方巨型弧幕輕微呼吸微動
+        if (curvedBackdropScreen) {
+            const targetBackdropOpacity = currentActiveIndex === -1 ? 0.38 : 0.08;
+            curvedBackdropScreen.material.opacity += (targetBackdropOpacity - curvedBackdropScreen.material.opacity) * 0.05;
+            curvedBackdropScreen.position.y = (isMobile ? 12 : 9) + Math.sin(time * 1.5) * 0.4;
         }
 
         if (currentActiveIndex === -1) {
