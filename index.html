@@ -79,11 +79,28 @@
             transform: translateY(105%); 
             transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); 
             z-index: 100; display: flex; flex-direction: column; align-items: center;
+            overflow-y: auto; overflow-x: hidden;
+            -webkit-overflow-scrolling: touch; touch-action: pan-y;
             pointer-events: none;
         }
         #glass-panel.full-open { 
             transform: translateY(0%); 
             pointer-events: auto;
+        }
+
+        /* 滾動條貼在全螢幕最右側邊緣，極簡透明 */
+        #glass-panel::-webkit-scrollbar {
+            width: 3px;
+        }
+        #glass-panel::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        #glass-panel::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 3px;
+        }
+        #glass-panel::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.7);
         }
 
         .panel-handle { 
@@ -92,40 +109,23 @@
             flex-shrink: 0; cursor: pointer; 
         }
         #close-btn { 
-            position: absolute; top: 18px; right: 24px; width: 32px; height: 32px; 
+            position: fixed; top: 18px; right: 24px; width: 32px; height: 32px; 
             color: #ffffff; font-size: 22px; display: flex; justify-content: center; align-items: center;
             z-index: 110; cursor: pointer; background: rgba(0,0,0,0.15); border-radius: 50%;
         }
 
         .panel-content {
-            width: 100%; max-width: 1100px; padding: 10px 20px 80px 40px; box-sizing: border-box;
+            width: 100%; max-width: 1100px; padding: 10px 40px 80px 40px; box-sizing: border-box;
             display: flex; flex-direction: column; gap: 25px; opacity: 0; 
-            transition: opacity 0.4s ease; height: 100%; overflow-y: auto;
-            -webkit-overflow-scrolling: touch; touch-action: pan-y;
+            transition: opacity 0.4s ease; height: auto;
         }
         #glass-panel.full-open .panel-content { opacity: 1; }
-
-        /* ✨ 完美透明、靠邊極簡滾動條設計 */
-        .panel-content::-webkit-scrollbar {
-            width: 4px;
-        }
-        .panel-content::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .panel-content::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.35);
-            border-radius: 4px;
-        }
-        .panel-content::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.6);
-        }
 
         .panel-left { width: 100%; }
         .panel-title-text { font-size: 2.5rem; font-weight: 900; color: #ffffff; line-height: 1.1; margin: 0; }
 
         .panel-right { width: 100%; }
         
-        /* 統一文字大小約束 */
         .detail-text { 
             width: 100%; 
             color: #ffffff; 
@@ -156,14 +156,14 @@
         @media (min-width: 769px) {
             .panel-content { flex-direction: row; gap: 50px; }
             .panel-left { flex: 1; padding-top: 30px; }
-            .panel-right { flex: 2; padding-top: 30px; padding-right: 15px; }
+            .panel-right { flex: 2; padding-top: 30px; }
         }
         @media (max-width: 768px) {
             #brand { top: 20px; left: 20px; font-size: 1rem; }
             #audio-toggle { top: 15px; right: 20px; width: 40px; height: 40px; }
             #ui-layer { left: 20px; bottom: 12%; width: calc(100% - 40px); }
             #ui-title { font-size: 2.8rem; }
-            .panel-content { padding: 10px 15px 60px 20px; }
+            .panel-content { padding: 10px 20px 60px 20px; }
             .panel-title-text { font-size: 2rem; }
         }
     </style>
@@ -215,7 +215,7 @@
     import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
     const RADIUS = 20;            
-    const CARD_COUNT = 25;        
+    const CARD_COUNT = 24; // 6 個作品等比排列 24 張卡片        
     const SPACE_COLOR = '#6c5b5e';
 
     let scene, camera, renderer;
@@ -365,7 +365,7 @@
 
     async function fetchData() {
         const nocache = new Date().getTime();
-        const items = ['a', 'b', 'c', 'd', 'e']; 
+        const items = ['a', 'b', 'c', 'd', 'e', 'f']; 
 
         projects = await Promise.all(items.map(async (name, index) => {
             let desc = "";
@@ -379,12 +379,15 @@
                 customTitle = "身體實驗場";
                 customSubtitle = "【 身體實驗場｜舞作｜關於身體，撕裂 ‧ 新生 ‧ 共融 】";
             } else if (name === 'c') {
-                customTitle = "Lücy";
-                customSubtitle = "Lücy 金曲新人獎";
+                customTitle = "《Breathing-with — あわいの種》";
+                customSubtitle = "《Breathing-with — あわいの種》";
             } else if (name === 'd') {
-                customTitle = "莫比斯圓環創作公社-2025";
-                customSubtitle = "莫比斯圓環創作公社-2025";
+                customTitle = "《超聲體：人魚重奏》";
+                customSubtitle = "《超聲體：人魚重奏》(Undertone: A Mermaid Duet)";
             } else if (name === 'e') {
+                customTitle = "Lücy";
+                customSubtitle = "Lücy 金曲新人獎";
+            } else if (name === 'f') {
                 customTitle = "wannasleep 李奕賢";
                 customSubtitle = "wannasleep 李奕賢";
             }
@@ -505,6 +508,7 @@
         
         const panel = document.getElementById('glass-panel');
         panel.classList.add('full-open');
+        panel.scrollTop = 0; // 重設滾動位置
         document.body.classList.add('panel-open');
 
         activeCardUUID = cardMesh.uuid;
@@ -643,7 +647,6 @@
             carouselGroup.rotation.y = currentRotation;
         }
 
-        // ✨ 增加自然呼吸浮動機制（手機在沒滑動時也會有細膩晃動感）
         if (currentActiveIndex === -1) {
             let autoFloatX = isMobile ? Math.sin(time * 3) * 1.8 : 0;
             let autoFloatY = isMobile ? Math.cos(time * 2.5) * 1.2 : 0;
