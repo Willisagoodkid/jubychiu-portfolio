@@ -1,32 +1,21 @@
-<h2>身體實驗場｜舞作｜關於身體，撕裂 ‧ 新生 ‧ 共融</h2>
-<p>編舞者：
-許誌恒（誌恒） @chihhenhsu
-黃明聖（宇嶙） @forrest_saint640
-黃培韶（啊搖） @a_yao.peishaoh
-<img src="images/b.png>
-<img src="images/b-1.png>
-<img src="images/b-2.png>
-<img src="images/b-3.png>
-舞者：
-陳晏柔 @yanrouchen
-盧筱琳 @kylie_daphne
-陳家漢 @mos_94275
-賴芳汶 @fangwen._528
-周宏翰 @ahan_staysimple
-謝家芯 @chaya_177
-高筱婷 @pleurcamille
-溫圓萱 @_yuan.13
-呂湘琳 @ponglin
-邱馨儀 @emma.chiu_
-吳沁潔 @chin.wu_
+<h2>身體實驗場 | 舞作 | 關於身體，撕裂 ‧ 新生 ‧ 共融</h2>
+<p>編舞者：<br>
+許誌恒（誌恒） @chihhenhsu<br>
+黃明聖（宇嶙） @forrest_saint640<br>
+黃培韶（啊搖） @a_yao.peishaoh</p>
 
-服裝設計：
-邱娉勻（Juby Chiu） @juby0101
+<img src="images/b.png">
+<img src="images/b-1.png">
+<img src="images/b-2.png">
+<img src="images/b-3.png">
 
-彩妝設計：
-許予鏞 （Stan Hsu） @yuyonghsu
-
-影像拍攝：
-@liao_zhen_kun
-
-#身體實驗場 #當代 #街舞 #contemporary #afrodance #africansance #dance #dancer #劇場攝影 #舞蹈攝影 #photography #blackwhitephotography</p>
+<p>舞者：<br>
+陳晏柔 @yanrouchen<br>
+盧筱琳 @kylie_daphne<br>
+陳家漢 @mos_94275<br>
+賴芳汶 @fangwen._528<br>
+周宏翰 @ahan_staysimple<br>
+謝家芯 @chaya_177<br>
+高筱婷 @pleurcamille<br>
+溫圓萱 @_yuan.13<br>
+呂湘琳 @ponglin</p>
