@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&family=Inter:wght@900&display=swap" rel="stylesheet">
 
-    <!-- 支援 Markdown 自動轉換排版 -->
+    <!-- Markdown 解析庫 -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <style>
@@ -19,15 +19,15 @@
             width: 100vw;
             height: 100vh; 
             overflow: hidden; 
-            background-color: #6c5b5e; 
-            font-family: 'Inter', 'Noto Sans TC', sans-serif; 
+            background-color: #6c5b5e;[cite: 1, 2]
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;[cite: 1, 2]
             touch-action: none;
         }
         canvas { display: block; }
         
         #loader {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #6c5b5e; color: #ffffff; display: flex; 
+            background: #6c5b5e; color: #ffffff; display: flex;[cite: 1, 2]
             flex-direction: column;
             justify-content: center; align-items: center; z-index: 999;
             transition: opacity 0.5s; 
@@ -87,7 +87,7 @@
         }
         #glass-panel.full-open { 
             transform: translateY(0%); 
-            background: rgba(42, 32, 34, 0.85); 
+            background: rgba(42, 32, 34, 0.9); 
             pointer-events: auto;
         }
 
@@ -127,8 +127,8 @@
         @media (max-width: 768px) {
             #brand { top: 20px; left: 20px; font-size: 1rem; }
             #audio-toggle { top: 15px; right: 20px; width: 40px; height: 40px; }
-            #ui-layer { left: 20px; bottom: 12%; width: calc(100% - 40px); }
-            #ui-title { font-size: 3.5rem; }
+            #ui-layer { left: 20px; bottom: 10%; width: calc(100% - 40px); }
+            #ui-title { font-size: 3.2rem; }
             .panel-content { padding: 0 20px 60px 20px; }
             .panel-title-text { font-size: 2.2rem; }
         }
@@ -156,7 +156,7 @@
 
     <div id="audio-toggle">
         <svg id="icon-sound-off" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
-        <svg id="icon-sound-on" viewBox="0 0 24 24" style="display:none;"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+        <svg id="icon-sound-on" viewBox="0 0 24 24" style="display:none;"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77z"/></svg>
     </div>
 
     <div id="ui-layer">
@@ -184,24 +184,25 @@
     import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
     const RADIUS = 20;            
-    const MODEL_FIXED_Y = 1.3;      
+    const MODEL_FIXED_Y = 1.3;[cite: 1, 2]      
     const CARD_COUNT = 25;        
-    const SPACE_COLOR = '#6c5b5e';
+    const SPACE_COLOR = '#6c5b5e';[cite: 1, 2]
 
     let scene, camera, renderer;
     let carouselGroup, centerModelGroup, cardMeshes = [], projects = [];
     let targetRotation = 0, currentRotation = 0, currentActiveIndex = -1, activeCardUUID = null, previewIndex = 0;
-    let centerModelTargetScale = 2.0;
+    let centerModelTargetScale = 2.0;[cite: 1, 2]
 
-    const CAMERA_BASE_Y = 22;
-    const CAMERA_BASE_Z = 75;
+    let isMobile = window.innerWidth / window.innerHeight < 1;
+    let CAMERA_BASE_Y = isMobile ? 30 : 22;
+    let CAMERA_BASE_Z = isMobile ? 115 : 75; // 手機版拉遠 Z 軸，完整容納圓環
 
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
     const manager = new THREE.LoadingManager();
 
     let lights = [], studioEnvMap;
-    let isDragging = false, previousTouchX = 0, touchStartX = 0, touchStartY = 0;
+    let isDragging = false, touchStartX = 0, touchStartY = 0, previousTouchX = 0, hasMoved = false;
 
     init();
 
@@ -209,44 +210,45 @@
         await fetchData();
 
         scene = new THREE.Scene();
-        scene.background = new THREE.Color(SPACE_COLOR);
-        scene.fog = new THREE.Fog(SPACE_COLOR, 40, 140); 
+        scene.background = new THREE.Color(SPACE_COLOR);[cite: 1, 2]
+        scene.fog = new THREE.Fog(SPACE_COLOR, 40, 150); 
 
-        camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 300);
+        camera = new THREE.PerspectiveCamera(isMobile ? 48 : 35, window.innerWidth / window.innerHeight, 0.1, 400);
         camera.position.set(0, CAMERA_BASE_Y, CAMERA_BASE_Z); 
-        camera.lookAt(0, 0, 0);
+        camera.lookAt(0, isMobile ? 4 : 0, 0);
         
-        camera.layers.enable(0);
-        camera.layers.enable(1);
+        camera.layers.enable(0);[cite: 1, 2]
+        camera.layers.enable(1);[cite: 1, 2]
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.VSMShadowMap; 
-        document.body.appendChild(renderer.domElement);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));[cite: 1, 2]
+        renderer.shadowMap.enabled = true;[cite: 1, 2]
+        renderer.shadowMap.type = THREE.VSMShadowMap;[cite: 1, 2]
+        document.body.appendChild(renderer.domElement);[cite: 1, 2]
 
-        const pmremGenerator = new THREE.PMREMGenerator(renderer);
-        studioEnvMap = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+        const pmremGenerator = new THREE.PMREMGenerator(renderer);[cite: 1, 2]
+        studioEnvMap = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;[cite: 1, 2]
 
-        setupLightsAndFloor();
+        setupLightsAndFloor();[cite: 1, 2]
 
-        if (projects.length > 0) {
-            await preloadAllModels();
-            switchPreviewModel(0); 
+        if (projects.length > 0) {[cite: 1, 2]
+            await preloadAllModels();[cite: 1, 2]
+            switchPreviewModel(0);[cite: 1, 2]
         }
 
-        createCarousel();
+        createCarousel();[cite: 1, 2]
 
-        window.addEventListener('resize', onWindowResize);
-        window.addEventListener('wheel', onWheel);
-        window.addEventListener('mousemove', onMouseMove);
-        window.addEventListener('click', onClick);
+        window.addEventListener('resize', onWindowResize);[cite: 1, 2]
+        window.addEventListener('wheel', onWheel);[cite: 1, 2]
+        window.addEventListener('mousemove', onMouseMove);[cite: 1, 2]
+        window.addEventListener('click', onClick);[cite: 1, 2]
 
-        // 觸控監聽：面板開啟時放行原生滾動，未開啟時轉動輪盤
+        // 嚴謹分流：點擊 vs 滑動
         window.addEventListener('touchstart', (e) => { 
             if (currentActiveIndex !== -1) return;
             isDragging = true; 
+            hasMoved = false;
             touchStartX = e.touches[0].clientX;
             touchStartY = e.touches[0].clientY;
             previousTouchX = touchStartX; 
@@ -255,6 +257,9 @@
         window.addEventListener('touchmove', (e) => {
             if (!isDragging || currentActiveIndex !== -1) return;
             const deltaX = e.touches[0].clientX - previousTouchX;
+            if (Math.abs(e.touches[0].clientX - touchStartX) > 8) {
+                hasMoved = true;
+            }
             targetRotation += deltaX * 0.007;
             previousTouchX = e.touches[0].clientX;
         }, { passive: true });
@@ -262,90 +267,84 @@
         window.addEventListener('touchend', (e) => { 
             if (currentActiveIndex !== -1) return;
             isDragging = false; 
-            const deltaX = Math.abs(e.changedTouches[0].clientX - touchStartX);
-            const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartY);
-            if (deltaX < 10 && deltaY < 10) {
-                onClick(e);
+            // 若手指移動距離極小，判定為點擊
+            if (!hasMoved) {
+                const touch = e.changedTouches[0];
+                handleRaycast(touch.clientX, touch.clientY);
             }
         });
 
         setupUIEvents();
+        document.getElementById('loader').style.opacity = 0;[cite: 1, 2]
+        setTimeout(() => document.getElementById('loader').remove(), 500);
 
-        const loaderDiv = document.getElementById('loader');
-        loaderDiv.style.opacity = 0;
-        setTimeout(() => loaderDiv.remove(), 500);
-
-        animate();
+        animate();[cite: 1, 2]
     }
 
     function setupLightsAndFloor() {
-        const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
-        ambientLight.layers.set(0);
-        scene.add(ambientLight);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);[cite: 1, 2]
+        ambientLight.layers.set(0);[cite: 1, 2]
+        scene.add(ambientLight);[cite: 1, 2]
 
-        const studioAmbient = new THREE.AmbientLight(0xffffff, 2.0);
-        studioAmbient.layers.set(1);
-        scene.add(studioAmbient);
+        const studioAmbient = new THREE.AmbientLight(0xffffff, 2.0);[cite: 1, 2]
+        studioAmbient.layers.set(1);[cite: 1, 2]
+        scene.add(studioAmbient);[cite: 1, 2]
 
-        const topLight = new THREE.DirectionalLight(0xffffff, 0.5);
-        topLight.position.set(0, 40, 0);
-        topLight.castShadow = true;
-        topLight.shadow.mapSize.width = 512;
-        topLight.shadow.mapSize.height = 512;
-        topLight.shadow.bias = -0.0001;
-        topLight.shadow.radius = 10;
-        topLight.shadow.blurSamples = 10;
-        topLight.layers.enable(0);
-        topLight.layers.enable(1);
-        scene.add(topLight);
+        const topLight = new THREE.DirectionalLight(0xffffff, 0.5);[cite: 1, 2]
+        topLight.position.set(0, 40, 0);[cite: 1, 2]
+        topLight.castShadow = true;[cite: 1, 2]
+        topLight.shadow.mapSize.width = 512;[cite: 1, 2]
+        topLight.shadow.mapSize.height = 512;[cite: 1, 2]
+        topLight.shadow.bias = -0.0001;[cite: 1, 2]
+        topLight.shadow.radius = 10;[cite: 1, 2]
+        topLight.shadow.blurSamples = 10;[cite: 1, 2]
+        topLight.layers.enable(0);[cite: 1, 2]
+        topLight.layers.enable(1);[cite: 1, 2]
+        scene.add(topLight);[cite: 1, 2]
 
-        const colors = [0xffd54f, 0xc084fc, 0xff8a65, 0xf472b6]; 
-        const intensities = [2500, 2500, 1800, 1800]; 
+        const colors = [0xffd54f, 0xc084fc, 0xff8a65, 0xf472b6];[cite: 1, 2]
+        const intensities = [2500, 2500, 1800, 1800];[cite: 1, 2]
         
         for(let i = 0; i < 4; i++) {
-            const light = new THREE.PointLight(colors[i], intensities[i], 200);
-            light.layers.set(0); 
-            scene.add(light);
-            lights.push(light);
+            const light = new THREE.PointLight(colors[i], intensities[i], 200);[cite: 1, 2]
+            light.layers.set(0);[cite: 1, 2]
+            scene.add(light);[cite: 1, 2]
+            lights.push(light);[cite: 1, 2]
         }
 
-        const floorGeo = new THREE.PlaneGeometry(1000, 1000); 
+        const floorGeo = new THREE.PlaneGeometry(1000, 1000);[cite: 1, 2]
         const floorMat = new THREE.MeshStandardMaterial({ 
-            color: new THREE.Color(SPACE_COLOR), 
-            roughness: 1.0,  
-            metalness: 0.0
+            color: new THREE.Color(SPACE_COLOR),[cite: 1, 2]
+            roughness: 1.0, [cite: 1, 2]
+            metalness: 0.0[cite: 1, 2]
         });
-        const floor = new THREE.Mesh(floorGeo, floorMat);
-        floor.rotation.x = -Math.PI / 2; 
-        floor.position.y = -4.0; 
-        floor.receiveShadow = true; 
-        floor.layers.set(0); 
-        scene.add(floor);
+        const floor = new THREE.Mesh(floorGeo, floorMat);[cite: 1, 2]
+        floor.rotation.x = -Math.PI / 2;[cite: 1, 2]
+        floor.position.y = -4.0;[cite: 1, 2]
+        floor.receiveShadow = true;[cite: 1, 2]
+        floor.layers.set(0);[cite: 1, 2]
+        scene.add(floor);[cite: 1, 2]
 
-        centerModelGroup = new THREE.Group();
-        scene.add(centerModelGroup);
+        centerModelGroup = new THREE.Group();[cite: 1, 2]
+        scene.add(centerModelGroup);[cite: 1, 2]
     }
 
     async function fetchData() {
-        const status = document.getElementById('loader-text');
-        status.innerText = "FETCHING DATA...";
+        const status = document.getElementById('loader-text');[cite: 1, 2]
+        status.innerText = "FETCHING DATA...";[cite: 1, 2]
         try {
-            const nocache = new Date().getTime();
-            
-            // 💡 新增頁面只需在此陣列加入代號（例如 'e', 'f'）
+            const nocache = new Date().getTime();[cite: 1, 2]
             const items = ['a', 'b', 'c', 'd', 'e']; 
 
             projects = await Promise.all(items.map(async (name, index) => {
                 let desc = "";
-                let customTitle = name.toUpperCase(); 
+                let customTitle = name.toUpperCase();[cite: 1, 2]
                 
-                // 💡 在此修改各頁面的主標題
-                if (name === 'a') customTitle = "JUBY 2014"; 
-                if (name === 'b') customTitle = "JUBY FALL"; 
-                if (name === 'c') customTitle = "JUBY DANCE"; 
+                if (name === 'a') customTitle = "篝火"; 
+                if (name === 'b') customTitle = "千年不惑"; 
+                if (name === 'c') customTitle = "2023 聲響 逆斷口"; 
                 if (name === 'd') customTitle = "JUBY STUDIO"; 
 
-                // 優先嘗試抓取 .md，若無則抓取 .txt
                 try {
                     let r = await fetch(`txts/${name}.md?t=${nocache}`);
                     if (!r.ok) r = await fetch(`txts/${name}.txt?t=${nocache}`);
@@ -354,141 +353,141 @@
 
                 return {
                     id: index,
-                    letter: name.toUpperCase(), 
+                    letter: name.toUpperCase(),[cite: 1, 2]
                     title: customTitle, 
                     image: `images/${name}.png?t=${nocache}`, 
-                    model: `models/${name}.glb`,
+                    model: `models/${name}.glb`, 
                     desc: desc,
-                    sceneObject: null,
-                    normalizedScale: 1 
+                    sceneObject: null,[cite: 1, 2]
+                    normalizedScale: 1[cite: 1, 2]
                 };
             }));
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error(e); }[cite: 1, 2]
     }
 
     async function preloadAllModels() {
-        const loader = new GLTFLoader(manager);
-        const dracoLoader = new DRACOLoader();
-        dracoLoader.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
-        loader.setDRACOLoader(dracoLoader);
+        const loader = new GLTFLoader(manager);[cite: 1, 2]
+        const dracoLoader = new DRACOLoader();[cite: 1, 2]
+        dracoLoader.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');[cite: 1, 2]
+        loader.setDRACOLoader(dracoLoader);[cite: 1, 2]
 
-        const total = projects.length;
-        let loaded = 0;
-        document.getElementById('loader-text').innerText = "LOADING MODELS...";
+        const total = projects.length;[cite: 1, 2]
+        let loaded = 0;[cite: 1, 2]
+        document.getElementById('loader-text').innerText = "LOADING MODELS...";[cite: 1, 2]
 
         const promises = projects.map((project) => {
             return new Promise((resolve) => {
                 loader.load(project.model, (gltf) => {
-                    const model = gltf.scene;
+                    const model = gltf.scene;[cite: 1, 2]
                     
-                    model.traverse((node) => { 
-                        if (node.isMesh) { 
-                            node.castShadow = true; 
-                            node.receiveShadow = true; 
-                            node.layers.set(1); 
+                    model.traverse((node) => {[cite: 1, 2]
+                        if (node.isMesh) {[cite: 1, 2]
+                            node.castShadow = true;[cite: 1, 2]
+                            node.receiveShadow = true;[cite: 1, 2]
+                            node.layers.set(1);[cite: 1, 2]
 
-                            if (node.material) {
-                                node.material.envMap = studioEnvMap;
-                                node.material.envMapIntensity = 1.0;
-                                node.material.needsUpdate = true;
+                            if (node.material) {[cite: 1, 2]
+                                node.material.envMap = studioEnvMap;[cite: 1, 2]
+                                node.material.envMapIntensity = 1.0;[cite: 1, 2]
+                                node.material.needsUpdate = true;[cite: 1, 2]
                             }
                         }
                     });
                     
-                    const box = new THREE.Box3().setFromObject(model);
-                    const center = new THREE.Vector3();
-                    box.getCenter(center);
-                    model.position.sub(center); 
+                    const box = new THREE.Box3().setFromObject(model);[cite: 1, 2]
+                    const center = new THREE.Vector3();[cite: 1, 2]
+                    box.getCenter(center);[cite: 1, 2]
+                    model.position.sub(center);[cite: 1, 2]
 
-                    const size = new THREE.Vector3();
-                    box.getSize(size);
-                    const maxDim = Math.max(size.x, size.y, size.z);
-                    project.normalizedScale = 4.0 / maxDim;
+                    const size = new THREE.Vector3();[cite: 1, 2]
+                    box.getSize(size);[cite: 1, 2]
+                    const maxDim = Math.max(size.x, size.y, size.z);[cite: 1, 2]
+                    project.normalizedScale = 4.0 / maxDim;[cite: 1, 2]
 
-                    model.visible = false; 
-                    centerModelGroup.add(model);
-                    project.sceneObject = model;
+                    model.visible = false;[cite: 1, 2]
+                    centerModelGroup.add(model);[cite: 1, 2]
+                    project.sceneObject = model;[cite: 1, 2]
 
-                    loaded++;
-                    document.getElementById('progress-fill').style.width = Math.round((loaded / total) * 100) + "%";
-                    resolve();
-                }, undefined, () => resolve());
+                    loaded++;[cite: 1, 2]
+                    document.getElementById('progress-fill').style.width = Math.round((loaded / total) * 100) + "%";[cite: 1, 2]
+                    resolve();[cite: 1, 2]
+                }, undefined, () => resolve());[cite: 1, 2]
             });
         });
 
-        await Promise.all(promises);
-        renderer.compile(scene, camera);
+        await Promise.all(promises);[cite: 1, 2]
+        renderer.compile(scene, camera);[cite: 1, 2]
     }
 
     function createCarousel() {
-        carouselGroup = new THREE.Group();
-        scene.add(carouselGroup);
-        if (projects.length === 0) return;
-        const loader = new THREE.TextureLoader();
+        carouselGroup = new THREE.Group();[cite: 1, 2]
+        scene.add(carouselGroup);[cite: 1, 2]
+        if (projects.length === 0) return;[cite: 1, 2]
+        const loader = new THREE.TextureLoader();[cite: 1, 2]
 
         for (let i = 0; i < CARD_COUNT; i++) {
-            const dataIndex = i % projects.length;
-            const project = projects[dataIndex];
-            const angle = (i / CARD_COUNT) * Math.PI * 2;
+            const dataIndex = i % projects.length;[cite: 1, 2]
+            const project = projects[dataIndex];[cite: 1, 2]
+            const angle = (i / CARD_COUNT) * Math.PI * 2;[cite: 1, 2]
             
-            const x = Math.sin(angle) * RADIUS;
-            const z = Math.cos(angle) * RADIUS;
+            const x = Math.sin(angle) * RADIUS;[cite: 1, 2]
+            const z = Math.cos(angle) * RADIUS;[cite: 1, 2]
 
-            const geometry = new THREE.PlaneGeometry(3.6, 2.4); 
+            const geometry = new THREE.PlaneGeometry(3.6, 2.4);[cite: 1, 2]
             const material = new THREE.MeshStandardMaterial({ 
-                color: 0x999999, 
-                side: THREE.DoubleSide, 
-                transparent: true,     
-                opacity: 0.7,          
-                roughness: 0.4,        
-                metalness: 0.2
+                color: 0x999999,[cite: 1, 2]
+                side: THREE.DoubleSide,[cite: 1, 2]
+                transparent: true,      [cite: 1, 2]
+                opacity: 0.7,          [cite: 1, 2]
+                roughness: 0.4,        [cite: 1, 2]
+                metalness: 0.2[cite: 1, 2]
             });
 
             loader.load(
                 project.image, 
                 (texture) => {
-                    texture.colorSpace = THREE.SRGBColorSpace;
-                    material.map = texture;
-                    material.color.setHex(0xffffff); 
-                    material.needsUpdate = true;
+                    texture.colorSpace = THREE.SRGBColorSpace;[cite: 1, 2]
+                    material.map = texture;[cite: 1, 2]
+                    material.color.setHex(0xffffff);[cite: 1, 2]
+                    material.needsUpdate = true;[cite: 1, 2]
                 },
-                undefined,
-                (err) => {}
+                undefined,[cite: 1, 2]
+                (err) => {}[cite: 1, 2]
             );
 
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.position.set(x, 0, z);
-            mesh.lookAt(0, 0, 0);
-            mesh.rotateY(Math.PI / 2); 
-            mesh.layers.set(0); 
+            const mesh = new THREE.Mesh(geometry, material);[cite: 1, 2]
+            mesh.position.set(x, 0, z);[cite: 1, 2]
+            mesh.lookAt(0, 0, 0);[cite: 1, 2]
+            mesh.rotateY(Math.PI / 2);[cite: 1, 2]
+            mesh.layers.set(0);[cite: 1, 2]
 
             mesh.userData = { 
-                id: i, 
-                project: project, 
-                dataIndex: dataIndex, 
-                originalAngle: angle,
-                targetLocalY: 0,  
-                currentLocalY: 0, 
-                targetOpacity: 0.7, 
-                baseOpacity: 0.7    
+                id: i,[cite: 1, 2]
+                project: project,[cite: 1, 2]
+                dataIndex: dataIndex,[cite: 1, 2]
+                originalAngle: angle,[cite: 1, 2]
+                targetLocalY: 0,  [cite: 1, 2]
+                currentLocalY: 0, [cite: 1, 2]
+                targetOpacity: 0.7, [cite: 1, 2]
+                baseOpacity: 0.7     [cite: 1, 2]
             };
-            carouselGroup.add(mesh);
-            cardMeshes.push(mesh);
+            carouselGroup.add(mesh);[cite: 1, 2]
+            cardMeshes.push(mesh);[cite: 1, 2]
         }
     }
 
     function switchPreviewModel(dataIndex) {
-        previewIndex = dataIndex;
-        updateUIText(dataIndex);
+        previewIndex = dataIndex;[cite: 1, 2]
+        updateUIText(dataIndex);[cite: 1, 2]
         
-        projects.forEach((p, idx) => {
-            if (p.sceneObject) {
-                p.sceneObject.visible = (idx === dataIndex);
-                if (idx === dataIndex) {
-                    p.sceneObject.rotation.y = 0;
-                    p.sceneObject.position.y = MODEL_FIXED_Y;
-                    if (currentActiveIndex === -1) {
-                        centerModelTargetScale = p.normalizedScale * 2.0;
+        projects.forEach((p, idx) => {[cite: 1, 2]
+            if (p.sceneObject) {[cite: 1, 2]
+                p.sceneObject.visible = (idx === dataIndex);[cite: 1, 2]
+                if (idx === dataIndex) {[cite: 1, 2]
+                    p.sceneObject.rotation.y = 0;[cite: 1, 2]
+                    p.sceneObject.position.y = MODEL_FIXED_Y;[cite: 1, 2]
+                    if (currentActiveIndex === -1) {[cite: 1, 2]
+                        centerModelTargetScale = p.normalizedScale * (isMobile ? 1.5 : 2.0);
                     }
                 }
             }
@@ -496,69 +495,13 @@
     }
 
     function updateUIText(dataIndex) {
-        const p = projects[dataIndex];
-        if(!p) return;
-        document.getElementById('ui-title').innerText = p.letter || "";
-        document.getElementById('ui-subtitle').innerText = p.title || ""; 
+        const p = projects[dataIndex];[cite: 1, 2]
+        if(!p) return;[cite: 1, 2]
+        document.getElementById('ui-title').innerText = p.letter || "";[cite: 1, 2]
+        document.getElementById('ui-subtitle').innerText = p.title || "";[cite: 1, 2]
     }
 
-    function enterDetailMode(cardMesh) {
-        const dataIndex = cardMesh.userData.dataIndex;
-        currentActiveIndex = dataIndex;
-        switchPreviewModel(dataIndex);
-        
-        const p = projects[dataIndex];
-        document.getElementById('detail-panel-title').innerText = p.title;
-        
-        // 💡 使用 marked.js 將 Markdown 或純文字轉為 HTML 排版
-        document.getElementById('detail-desc').innerHTML = typeof marked !== 'undefined' ? marked.parse(p.desc) : p.desc;
-        
-        const panel = document.getElementById('glass-panel');
-        panel.classList.add('full-open');
-        document.body.classList.add('panel-open');
-
-        centerModelTargetScale = p.normalizedScale * 2.5; 
-        activeCardUUID = cardMesh.uuid;
-        cardMesh.userData.targetLocalY = 50; 
-        cardMesh.userData.targetOpacity = 0; 
-    }
-
-    function exitDetailMode() {
-        currentActiveIndex = -1;
-        document.getElementById('glass-panel').classList.remove('full-open');
-        document.body.classList.remove('panel-open');
-        
-        const p = projects[previewIndex];
-        if(p) centerModelTargetScale = p.normalizedScale * 2.0; 
-        
-        if (activeCardUUID) {
-            const mesh = cardMeshes.find(m => m.uuid === activeCardUUID);
-            if (mesh) {
-                mesh.userData.targetLocalY = 0; 
-                mesh.userData.targetOpacity = mesh.userData.baseOpacity;
-            }
-        }
-        activeCardUUID = null;
-        
-        setTimeout(() => {
-            if(currentActiveIndex === -1) {
-                document.getElementById('detail-desc').innerHTML = '';
-            }
-        }, 500);
-    }
-
-    function onClick(event) {
-        if (currentActiveIndex !== -1) {
-            const path = event.composedPath ? event.composedPath() : [];
-            const isContent = path.some(el => el.classList && el.classList.contains('panel-content'));
-            if (!isContent && event.target.id !== 'audio-toggle') exitDetailMode();
-            return;
-        }
-
-        const clientX = event.clientX || (event.changedTouches && event.changedTouches[0].clientX);
-        const clientY = event.clientY || (event.changedTouches && event.changedTouches[0].clientY);
-        if (clientX === undefined || clientY === undefined) return;
-
+    function handleRaycast(clientX, clientY) {
         mouse.x = (clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(clientY / window.innerHeight) * 2 + 1;
 
@@ -584,138 +527,203 @@
         }
     }
 
+    function enterDetailMode(cardMesh) {
+        const dataIndex = cardMesh.userData.dataIndex;[cite: 1, 2]
+        currentActiveIndex = dataIndex;[cite: 1, 2]
+        switchPreviewModel(dataIndex);[cite: 1, 2]
+        
+        const p = projects[dataIndex];[cite: 1, 2]
+        document.getElementById('detail-panel-title').innerText = p.title;[cite: 1, 2]
+        
+        document.getElementById('detail-desc').innerHTML = typeof marked !== 'undefined' ? marked.parse(p.desc) : p.desc;
+        
+        const panel = document.getElementById('glass-panel');[cite: 1, 2]
+        panel.classList.add('full-open');
+        document.body.classList.add('panel-open');[cite: 1, 2]
+
+        centerModelTargetScale = p.normalizedScale * 2.5;[cite: 1, 2]
+        activeCardUUID = cardMesh.uuid;[cite: 1, 2]
+        cardMesh.userData.targetLocalY = 50;[cite: 1, 2]
+        cardMesh.userData.targetOpacity = 0;[cite: 1, 2]
+    }
+
+    function exitDetailMode() {
+        currentActiveIndex = -1;[cite: 1, 2]
+        document.getElementById('glass-panel').classList.remove('full-open');
+        document.body.classList.remove('panel-open');[cite: 1, 2]
+        
+        const p = projects[previewIndex];[cite: 1, 2]
+        if(p) centerModelTargetScale = p.normalizedScale * (isMobile ? 1.5 : 2.0); 
+        
+        if (activeCardUUID) {[cite: 1, 2]
+            const mesh = cardMeshes.find(m => m.uuid === activeCardUUID);[cite: 1, 2]
+            if (mesh) {[cite: 1, 2]
+                mesh.userData.targetLocalY = 0;[cite: 1, 2]
+                mesh.userData.targetOpacity = mesh.userData.baseOpacity;[cite: 1, 2]
+            }
+        }
+        activeCardUUID = null;[cite: 1, 2]
+        
+        setTimeout(() => {[cite: 1, 2]
+            if(currentActiveIndex === -1) {[cite: 1, 2]
+                document.getElementById('detail-desc').innerHTML = '';[cite: 1, 2]
+            }
+        }, 500);[cite: 1, 2]
+    }
+
+    function onClick(event) {
+        if (currentActiveIndex !== -1) {
+            const path = event.composedPath ? event.composedPath() : [];
+            const isContent = path.some(el => el.classList && el.classList.contains('panel-content'));
+            if (!isContent && event.target.id !== 'audio-toggle') exitDetailMode();
+            return;
+        }
+
+        handleRaycast(event.clientX, event.clientY);
+    }
+
     function setupUIEvents() {
-        document.getElementById('brand').addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (currentActiveIndex !== -1) exitDetailMode();
+        document.getElementById('brand').addEventListener('click', (e) => {[cite: 1, 2]
+            e.stopPropagation();[cite: 1, 2]
+            if (currentActiveIndex !== -1) exitDetailMode();[cite: 1, 2]
         });
 
         document.getElementById('close-btn').addEventListener('click', exitDetailMode);
         document.querySelector('.panel-handle').addEventListener('click', exitDetailMode);
 
-        const audioBtn = document.getElementById('audio-toggle');
-        const bgMusic = document.getElementById('bg-music');
-        const iconOn = document.getElementById('icon-sound-on');
-        const iconOff = document.getElementById('icon-sound-off');
-        let isPlaying = false;
+        const audioBtn = document.getElementById('audio-toggle');[cite: 1, 2]
+        const bgMusic = document.getElementById('bg-music');[cite: 1, 2]
+        const iconOn = document.getElementById('icon-sound-on');[cite: 1, 2]
+        const iconOff = document.getElementById('icon-sound-off');[cite: 1, 2]
+        let isPlaying = false;[cite: 1, 2]
 
-        audioBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); 
-            if (isPlaying) {
-                bgMusic.pause();
-                iconOn.style.display = 'none';
-                iconOff.style.display = 'block';
+        audioBtn.addEventListener('click', (e) => {[cite: 1, 2]
+            e.stopPropagation(); [cite: 1, 2]
+            if (isPlaying) {[cite: 1, 2]
+                bgMusic.pause();[cite: 1, 2]
+                iconOn.style.display = 'none';[cite: 1, 2]
+                iconOff.style.display = 'block';[cite: 1, 2]
             } else {
-                bgMusic.play();
-                iconOn.style.display = 'block';
-                iconOff.style.display = 'none';
+                bgMusic.play();[cite: 1, 2]
+                iconOn.style.display = 'block';[cite: 1, 2]
+                iconOff.style.display = 'none';[cite: 1, 2]
             }
-            isPlaying = !isPlaying;
+            isPlaying = !isPlaying;[cite: 1, 2]
         });
     }
 
     function onWindowResize() {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        isMobile = window.innerWidth / window.innerHeight < 1;
+        CAMERA_BASE_Y = isMobile ? 30 : 22;
+        CAMERA_BASE_Z = isMobile ? 115 : 75;
+        
+        camera.fov = isMobile ? 48 : 35;
+        camera.aspect = window.innerWidth / window.innerHeight;[cite: 1, 2]
+        camera.position.set(0, CAMERA_BASE_Y, CAMERA_BASE_Z);
+        camera.lookAt(0, isMobile ? 4 : 0, 0);
+        camera.updateProjectionMatrix();[cite: 1, 2]
+        renderer.setSize(window.innerWidth, window.innerHeight);[cite: 1, 2]
     }
 
     function onWheel(event) {
         if (currentActiveIndex === -1) {
-            targetRotation += event.deltaY * 0.0008;
+            targetRotation += event.deltaY * 0.0008;[cite: 1, 2]
         }
     }
 
     function onMouseMove(event) {
-        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        if (isMobile) return; // 手機版完全凍結視角位移，防止偏斜
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;[cite: 1, 2]
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;[cite: 1, 2]
         
-        if (!isDragging && currentActiveIndex === -1) {
-            const targetCamX = -mouse.x * 4; 
-            const targetCamY = mouse.y * 4 + CAMERA_BASE_Y;
-            camera.position.x += (targetCamX - camera.position.x) * 0.05;
-            camera.position.y += (targetCamY - camera.position.y) * 0.05;
-            camera.lookAt(0, 0, 0);
+        if (!isDragging && currentActiveIndex === -1) {[cite: 1, 2]
+            const targetCamX = -mouse.x * 4; [cite: 1, 2]
+            const targetCamY = mouse.y * 4 + CAMERA_BASE_Y;[cite: 1, 2]
+            camera.position.x += (targetCamX - camera.position.x) * 0.05;[cite: 1, 2]
+            camera.position.y += (targetCamY - camera.position.y) * 0.05;[cite: 1, 2]
+            camera.lookAt(0, 0, 0);[cite: 1, 2]
         }
     }
 
     function animate() {
-        requestAnimationFrame(animate);
+        requestAnimationFrame(animate);[cite: 1, 2]
 
-        const time = Date.now() * 0.0002; 
-        if (lights.length === 4) {
-            lights[0].position.x = Math.sin(time) * 25;
-            lights[0].position.z = Math.cos(time) * 25;
-            lights[0].position.y = 8 + Math.sin(time * 1.5) * 3;
+        const time = Date.now() * 0.0002; [cite: 1, 2]
+        if (lights.length === 4) {[cite: 1, 2]
+            lights[0].position.x = Math.sin(time) * 25;[cite: 1, 2]
+            lights[0].position.z = Math.cos(time) * 25;[cite: 1, 2]
+            lights[0].position.y = 8 + Math.sin(time * 1.5) * 3;[cite: 1, 2]
 
-            lights[1].position.x = Math.sin(time + Math.PI) * 25;
-            lights[1].position.z = Math.cos(time + Math.PI) * 25;
-            lights[1].position.y = 8 - Math.sin(time * 1.5) * 3;
+            lights[1].position.x = Math.sin(time + Math.PI) * 25;[cite: 1, 2]
+            lights[1].position.z = Math.cos(time + Math.PI) * 25;[cite: 1, 2]
+            lights[1].position.y = 8 - Math.sin(time * 1.5) * 3;[cite: 1, 2]
 
-            lights[2].position.x = Math.cos(time * 1.2) * 15;
-            lights[2].position.z = Math.sin(time * 1.2) * 15;
-            lights[2].position.y = 12 + Math.cos(time * 2) * 2;
+            lights[2].position.x = Math.cos(time * 1.2) * 15;[cite: 1, 2]
+            lights[2].position.z = Math.sin(time * 1.2) * 15;[cite: 1, 2]
+            lights[2].position.y = 12 + Math.cos(time * 2) * 2;[cite: 1, 2]
 
-            lights[3].position.x = Math.cos(time * 1.2 + Math.PI) * 15;
-            lights[3].position.z = Math.sin(time * 1.2 + Math.PI) * 15;
-            lights[3].position.y = 12 - Math.cos(time * 2) * 2;
+            lights[3].position.x = Math.cos(time * 1.2 + Math.PI) * 15;[cite: 1, 2]
+            lights[3].position.z = Math.sin(time * 1.2 + Math.PI) * 15;[cite: 1, 2]
+            lights[3].position.y = 12 - Math.cos(time * 2) * 2;[cite: 1, 2]
         }
 
-        currentRotation += (targetRotation - currentRotation) * 0.06;
-        if (carouselGroup) carouselGroup.rotation.y = currentRotation;
+        currentRotation += (targetRotation - currentRotation) * 0.06;[cite: 1, 2]
+        if (carouselGroup) {[cite: 1, 2]
+            carouselGroup.rotation.y = currentRotation;[cite: 1, 2]
+        }
 
-        cardMeshes.forEach(mesh => {
-            const target = mesh.userData.targetLocalY;
-            mesh.userData.currentLocalY += (target - mesh.userData.currentLocalY) * 0.05;
-            mesh.position.y = mesh.userData.currentLocalY;
+        cardMeshes.forEach(mesh => {[cite: 1, 2]
+            const target = mesh.userData.targetLocalY;[cite: 1, 2]
+            mesh.userData.currentLocalY += (target - mesh.userData.currentLocalY) * 0.05;[cite: 1, 2]
+            mesh.position.y = mesh.userData.currentLocalY;[cite: 1, 2]
             
-            if (mesh.material) {
-                const currentOp = mesh.material.opacity;
-                const targetOp = mesh.userData.targetOpacity;
-                mesh.material.opacity += (targetOp - currentOp) * 0.05;
+            if (mesh.material) {[cite: 1, 2]
+                const currentOp = mesh.material.opacity;[cite: 1, 2]
+                const targetOp = mesh.userData.targetOpacity;[cite: 1, 2]
+                mesh.material.opacity += (targetOp - currentOp) * 0.05;[cite: 1, 2]
             }
         });
 
-        if (currentActiveIndex === -1) {
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(cardMeshes);
+        if (currentActiveIndex === -1 && !isMobile) {
+            raycaster.setFromCamera(mouse, camera);[cite: 1, 2]
+            const intersects = raycaster.intersectObjects(cardMeshes);[cite: 1, 2]
             
-            cardMeshes.forEach(mesh => {
-                if (mesh.uuid !== activeCardUUID) {
-                    mesh.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
-                    mesh.userData.targetOpacity = mesh.userData.baseOpacity; 
+            cardMeshes.forEach(mesh => {[cite: 1, 2]
+                if (mesh.uuid !== activeCardUUID) {[cite: 1, 2]
+                    mesh.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);[cite: 1, 2]
+                    mesh.userData.targetOpacity = mesh.userData.baseOpacity; [cite: 1, 2]
                 }
             });
-            document.body.style.cursor = 'default';
+            document.body.style.cursor = 'default';[cite: 1, 2]
 
-            if (intersects.length > 0) {
-                const hit = intersects[0].object;
-                const targetIdx = hit.userData.dataIndex;
-                document.body.style.cursor = 'pointer';
-                hit.scale.lerp(new THREE.Vector3(1.3, 1.3, 1.3), 0.15);
+            if (intersects.length > 0) {[cite: 1, 2]
+                const hit = intersects[0].object;[cite: 1, 2]
+                const targetIdx = hit.userData.dataIndex;[cite: 1, 2]
+                document.body.style.cursor = 'pointer';[cite: 1, 2]
+                hit.scale.lerp(new THREE.Vector3(1.3, 1.3, 1.3), 0.15);[cite: 1, 2]
                 
-                if (hit.uuid !== activeCardUUID) {
-                    hit.userData.targetOpacity = 1.0;
+                if (hit.uuid !== activeCardUUID) {[cite: 1, 2]
+                    hit.userData.targetOpacity = 1.0;[cite: 1, 2]
                 }
                 
-                if (previewIndex !== targetIdx) {
-                    switchPreviewModel(targetIdx);
+                if (previewIndex !== targetIdx) {[cite: 1, 2]
+                    switchPreviewModel(targetIdx);[cite: 1, 2]
                 }
             }
         }
 
-        projects.forEach(p => {
-            if (p.sceneObject && p.sceneObject.visible) {
-                p.sceneObject.rotation.y += 0.005;
-                p.sceneObject.position.y = MODEL_FIXED_Y; 
+        projects.forEach(p => {[cite: 1, 2]
+            if (p.sceneObject && p.sceneObject.visible) {[cite: 1, 2]
+                p.sceneObject.rotation.y += 0.005;[cite: 1, 2]
+                p.sceneObject.position.y = MODEL_FIXED_Y; [cite: 1, 2]
 
-                const currentS = p.sceneObject.scale.x;
-                const nextS = currentS + (centerModelTargetScale - currentS) * 0.05;
-                p.sceneObject.scale.set(nextS, nextS, nextS);
+                const currentS = p.sceneObject.scale.x;[cite: 1, 2]
+                const nextS = currentS + (centerModelTargetScale - currentS) * 0.05;[cite: 1, 2]
+                p.sceneObject.scale.set(nextS, nextS, nextS);[cite: 1, 2]
             }
         });
 
-        renderer.render(scene, camera);
+        renderer.render(scene, camera);[cite: 1, 2]
     }
 </script>
 </body>
