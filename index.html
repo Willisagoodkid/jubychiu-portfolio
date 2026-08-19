@@ -244,7 +244,7 @@
 
         scene = new THREE.Scene();
         scene.background = new THREE.Color(SPACE_COLOR);
-        scene.fog = new THREE.Fog(SPACE_COLOR, 40, 150); 
+        scene.fog = new THREE.Fog(SPACE_COLOR, 40, 160); 
 
         camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 400);
         camera.position.set(0, CAMERA_BASE_Y, CAMERA_BASE_Z); 
@@ -303,7 +303,6 @@
             }
         });
 
-        // 頁面切換或螢幕鎖定自動暫停音樂
         document.addEventListener('visibilitychange', () => {
             const bgMusic = document.getElementById('bg-music');
             if (bgMusic && document.hidden) {
@@ -360,6 +359,45 @@
         scene.add(floor);
     }
 
+    // 自動支援 PNG 與 JPG (優先尋找 .png，失敗自動嘗試 .jpg 與 .jpeg)
+    function loadTextureWithFallback(name, nocache) {
+        return new Promise((resolve) => {
+            const pngUrl = `images/${name}.png?t=${nocache}`;
+            const jpgUrl = `images/${name}.jpg?t=${nocache}`;
+            const jpegUrl = `images/${name}.jpeg?t=${nocache}`;
+
+            textureLoader.load(
+                pngUrl,
+                (texture) => {
+                    texture.colorSpace = THREE.SRGBColorSpace;
+                    resolve(texture);
+                },
+                undefined,
+                () => {
+                    textureLoader.load(
+                        jpgUrl,
+                        (texture) => {
+                            texture.colorSpace = THREE.SRGBColorSpace;
+                            resolve(texture);
+                        },
+                        undefined,
+                        () => {
+                            textureLoader.load(
+                                jpegUrl,
+                                (texture) => {
+                                    texture.colorSpace = THREE.SRGBColorSpace;
+                                    resolve(texture);
+                                },
+                                undefined,
+                                () => resolve(null)
+                            );
+                        }
+                    );
+                }
+            );
+        });
+    }
+
     async function fetchData() {
         const nocache = new Date().getTime();
         const items = ['a', 'b', 'c', 'd', 'e', 'f']; 
@@ -394,15 +432,12 @@
                 if(r.ok) desc = await r.text();
             } catch(e){}
 
-            const imgUrl = `images/${name}.png?t=${nocache}`;
-            const texture = textureLoader.load(imgUrl);
-            texture.colorSpace = THREE.SRGBColorSpace;
+            const texture = await loadTextureWithFallback(name, nocache);
 
             return {
                 id: index,
                 title: customTitle, 
                 subtitle: customSubtitle,
-                image: imgUrl,
                 texture: texture,
                 desc: desc
             };
@@ -456,7 +491,6 @@
         }
     }
 
-    // 建立中間主卡（保證手機視角清晰朝向相機）
     function createCenterFloatingCard() {
         const cardW = isMobile ? 8.0 : 6.6;
         const cardH = isMobile ? 5.2 : 4.4;
@@ -478,7 +512,7 @@
     function switchPreview(dataIndex) {
         previewIndex = dataIndex;
         updateUIText(dataIndex);
-        if (centerFloatingCard && projects[dataIndex]) {
+        if (projects[dataIndex] && centerFloatingCard) {
             centerFloatingCard.material.map = projects[dataIndex].texture;
             centerFloatingCard.material.needsUpdate = true;
         }
@@ -566,7 +600,6 @@
     }
 
     function setupUIEvents() {
-        // 點擊左上大標強制真實刷新
         const brandEl = document.getElementById('brand');
         const triggerReload = (e) => {
             e.preventDefault();
@@ -583,7 +616,6 @@
         const iconOn = document.getElementById('icon-sound-on');
         const iconOff = document.getElementById('icon-sound-off');
 
-        // 音樂手動獨立開關：杜絕任何觸控自動干擾
         const toggleMusic = (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -680,11 +712,11 @@
             }
         }
 
-        // 中間主卡呼吸浮動並始終正面微迎鏡頭
+        // 中間主卡呼吸浮動
         if (centerFloatingCard) {
             centerFloatingCard.position.y = (isMobile ? 2.5 : 1.3) + Math.sin(time * 4) * 0.3;
             centerFloatingCard.rotation.y = Math.sin(time * 2) * 0.08;
-            centerFloatingCard.rotation.x = isMobile ? 0.18 : 0; // 手機俯角迎光微傾
+            centerFloatingCard.rotation.x = isMobile ? 0.18 : 0;
             const targetScale = currentActiveIndex === -1 ? 1.0 : 0.001;
             centerFloatingCard.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
         }
