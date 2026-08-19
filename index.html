@@ -9,6 +9,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&family=Inter:wght@900&display=swap" rel="stylesheet">
 
+    <!-- 支援 Markdown 自動轉換排版 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
     <style>
         body { 
             margin: 0; 
@@ -18,6 +21,7 @@
             overflow: hidden; 
             background-color: #6c5b5e; 
             font-family: 'Inter', 'Noto Sans TC', sans-serif; 
+            touch-action: none;
         }
         canvas { display: block; }
         
@@ -43,182 +47,91 @@
         #brand:hover { opacity: 0.7; }
 
         #audio-toggle {
-            position: absolute;
-            top: 25px;
-            right: 40px;
-            width: 45px;
-            height: 45px;
+            position: absolute; top: 25px; right: 40px; width: 45px; height: 45px;
             background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: #ffffff;
-            cursor: pointer;
-            z-index: 20;
-            transition: all 0.3s ease;
-            pointer-events: auto;
+            display: flex; justify-content: center; align-items: center;
+            color: #ffffff; cursor: pointer; z-index: 20;
+            transition: all 0.3s ease; pointer-events: auto;
         }
-        #audio-toggle:hover {
-            background: rgba(255, 255, 255, 0.25);
-            transform: scale(1.05);
-        }
-        #audio-toggle svg {
-            width: 22px;
-            height: 22px;
-            fill: currentColor;
-        }
+        #audio-toggle svg { width: 22px; height: 22px; fill: currentColor; }
 
         #ui-layer {
-            position: absolute; 
-            bottom: 15%; 
-            left: 8%;    
-            width: 600px; 
-            text-align: left;
-            pointer-events: none; 
-            color: #ffffff; 
-            z-index: 5;
+            position: absolute; bottom: 15%; left: 8%; width: 600px; 
+            text-align: left; pointer-events: none; color: #ffffff; z-index: 5;
             transition: opacity 0.6s, transform 0.8s cubic-bezier(0.19, 1, 0.22, 1);
         }
-
-        body.panel-open #ui-layer {
-            transform: translateY(-200px);
-            opacity: 0; 
-        }
-
-        #ui-title-container {
-            display: flex;
-            align-items: flex-end; 
-            margin-bottom: 10px;
-            padding-bottom: 15px; 
-        }
+        body.panel-open #ui-layer { transform: translateY(-200px); opacity: 0; }
 
         #ui-title { 
-            font-size: 5.5rem; 
-            font-weight: 900; 
-            margin: 0; 
-            line-height: 0.85; 
-            text-transform: uppercase; 
-            font-family: 'Inter', sans-serif; 
-            word-break: break-word; 
+            font-size: 5.5rem; font-weight: 900; margin: 0; 
+            line-height: 0.85; text-transform: uppercase; word-break: break-word; 
         }
-
         #ui-subtitle {
-            font-size: 1.2rem;
-            font-weight: 700;
-            margin: 0;
-            padding-left: 12px;
-            border-left: 4px solid #ffffff; 
-            line-height: 1.2;
-            word-break: break-word;
+            font-size: 1.2rem; font-weight: 700; margin: 5px 0 0 0;
+            padding-left: 12px; border-left: 4px solid #ffffff; line-height: 1.2;
         }
 
         #glass-panel {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 85vh; 
-            background: rgba(255, 255, 255, 0.01); 
-            backdrop-filter: blur(3px); 
-            -webkit-backdrop-filter: blur(3px);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.02); 
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 85vh; 
+            background: rgba(255, 255, 255, 0.05); 
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border-top: 1px solid rgba(255, 255, 255, 0.15); 
             border-radius: 30px 30px 0 0; 
             transform: translateY(100%); 
-            transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); 
-            z-index: 20;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            box-sizing: border-box;
-            cursor: pointer; 
+            transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); 
+            z-index: 100; display: flex; flex-direction: column; align-items: center;
+            pointer-events: none;
         }
-
-        #glass-panel.half-open { transform: translateY(60%); }
         #glass-panel.full-open { 
-            transform: translateY(0%);
-            background: rgba(255, 255, 255, 0.2); 
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            cursor: default; 
+            transform: translateY(0%); 
+            background: rgba(42, 32, 34, 0.85); 
+            pointer-events: auto;
         }
 
-        .panel-handle {
-            width: 60px;
-            height: 5px;
-            background: rgba(255,255,255,0.4); 
-            border-radius: 5px;
-            margin-top: 15px;
-            margin-bottom: 30px;
-            flex-shrink: 0;
-            cursor: pointer; 
+        .panel-handle { 
+            width: 60px; height: 5px; background: rgba(255,255,255,0.4); 
+            border-radius: 5px; margin-top: 15px; margin-bottom: 20px; 
+            flex-shrink: 0; cursor: pointer; 
         }
+        #close-btn { 
+            position: absolute; top: 20px; right: 25px; width: 30px; height: 30px; 
+            color: white; font-size: 24px; display: none; z-index: 110; cursor: pointer; 
+        }
+        body.panel-open #close-btn { display: block; }
 
         .panel-content {
-            width: 100%; 
-            max-width: 100%; 
-            padding: 0 40px; 
-            box-sizing: border-box;
-            display: flex;
-            gap: 50px;
-            opacity: 0;
-            transition: opacity 0.8s; 
-            height: 100%;
-            padding-bottom: 50px;
+            width: 100%; max-width: 1200px; padding: 0 40px 80px 40px; box-sizing: border-box;
+            display: flex; flex-direction: column; gap: 30px; opacity: 0; 
+            transition: opacity 0.5s; height: 100%; overflow-y: auto;
+            -webkit-overflow-scrolling: touch; touch-action: pan-y;
         }
-
-        #glass-panel.half-open .panel-content,
         #glass-panel.full-open .panel-content { opacity: 1; }
 
-        .panel-left { 
-            flex: 1; 
-            padding-top: 200px; 
-        }
-        .panel-title-text { 
-            font-size: 3.5rem; 
-            font-weight: 900; 
-            color: #ffffff; 
-            line-height: 1.1; 
-            word-break: break-word; 
-        }
+        .panel-left { width: 100%; }
+        .panel-title-text { font-size: 3rem; font-weight: 900; color: #ffffff; line-height: 1.1; margin: 0; }
 
-        .panel-right { 
-            flex: 3; 
-            overflow-y: auto; 
-            padding-right: 25px; 
-            padding-bottom: 100px; 
-        }
+        .panel-right { width: 100%; }
+        .detail-text { width: 100%; color: #eeeeee; font-size: 1.05rem; line-height: 1.8; }
+        .detail-text img { max-width: 100%; height: auto; border-radius: 8px; margin: 20px 0; display: block; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .detail-text h1, .detail-text h2, .detail-text h3 { color: #ffffff; margin-top: 30px; margin-bottom: 15px; font-weight: 900; }
+        .detail-text p { margin-bottom: 20px; }
 
-        .panel-right::-webkit-scrollbar { width: 4px; }
-        .panel-right::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.4); border-radius: 4px; }
-        .panel-right::-webkit-scrollbar-track { background: transparent; }
-
-        .detail-text { width: 100%; }
-        .detail-text img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 8px; 
-            margin-bottom: 25px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08); 
-            display: block;
+        @media (min-width: 769px) {
+            .panel-content { flex-direction: row; gap: 60px; }
+            .panel-left { flex: 1; padding-top: 40px; }
+            .panel-right { flex: 2; padding-top: 40px; }
         }
-        .detail-text h2 {
-            font-size: 2rem;
-            font-weight: 900;
-            margin: 0 0 15px 0;
-            color: #ffffff;
+        @media (max-width: 768px) {
+            #brand { top: 20px; left: 20px; font-size: 1rem; }
+            #audio-toggle { top: 15px; right: 20px; width: 40px; height: 40px; }
+            #ui-layer { left: 20px; bottom: 12%; width: calc(100% - 40px); }
+            #ui-title { font-size: 3.5rem; }
+            .panel-content { padding: 0 20px 60px 20px; }
+            .panel-title-text { font-size: 2.2rem; }
         }
-        .detail-text p {
-            font-size: 1.1rem;
-            line-height: 1.8;
-            color: #eeeeee;
-            margin-bottom: 25px;
-        }
-
     </style>
     
     <script type="importmap">
@@ -232,9 +145,7 @@
 </head>
 <body>
 
-    <audio id="bg-music" loop>
-        <source src="music.mp3" type="audio/mpeg">
-    </audio>
+    <audio id="bg-music" loop><source src="music.mp3" type="audio/mpeg"></audio>
 
     <div id="loader">
         <div id="loader-text">INITIALIZING...</div>
@@ -244,23 +155,18 @@
     <div id="brand">Juby chiuuuuu studio &lt;3 .</div>
 
     <div id="audio-toggle">
-        <svg id="icon-sound-off" viewBox="0 0 24 24">
-            <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
-        </svg>
-        <svg id="icon-sound-on" viewBox="0 0 24 24" style="display:none;">
-            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-        </svg>
+        <svg id="icon-sound-off" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+        <svg id="icon-sound-on" viewBox="0 0 24 24" style="display:none;"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
     </div>
 
     <div id="ui-layer">
-        <div id="ui-title-container">
-            <h1 id="ui-title"></h1>
-        </div>
+        <h1 id="ui-title"></h1>
         <div id="ui-subtitle"></div>
     </div>
 
     <div id="glass-panel">
         <div class="panel-handle"></div>
+        <div id="close-btn">✕</div>
         <div class="panel-content">
             <div class="panel-left">
                 <div class="panel-title-text" id="detail-panel-title"></div>
@@ -283,17 +189,8 @@
     const SPACE_COLOR = '#6c5b5e';
 
     let scene, camera, renderer;
-    let carouselGroup;     
-    let centerModelGroup;  
-    let cardMeshes = [];   
-    let projects = [];     
-    
-    let targetRotation = 0;
-    let currentRotation = 0;
-    let currentActiveIndex = -1; 
-    let activeCardUUID = null;   
-    let previewIndex = 0; 
-
+    let carouselGroup, centerModelGroup, cardMeshes = [], projects = [];
+    let targetRotation = 0, currentRotation = 0, currentActiveIndex = -1, activeCardUUID = null, previewIndex = 0;
     let centerModelTargetScale = 2.0;
 
     const CAMERA_BASE_Y = 22;
@@ -303,12 +200,8 @@
     const mouse = new THREE.Vector2();
     const manager = new THREE.LoadingManager();
 
-    let lights = [];
-    let studioEnvMap;
-
-    // 💡 修正手機版轉動所需的座標快取
-    let isDragging = false;
-    let previousTouchX = 0;
+    let lights = [], studioEnvMap;
+    let isDragging = false, previousTouchX = 0, touchStartX = 0, touchStartY = 0;
 
     init();
 
@@ -350,74 +243,37 @@
         window.addEventListener('mousemove', onMouseMove);
         window.addEventListener('click', onClick);
 
-        // 💡 修正滑鼠拖動與手機觸控轉動邏輯，完美解決手機版轉不動的Bug
-        window.addEventListener('mousedown', (e) => { isDragging = true; });
-        window.addEventListener('mouseup', () => { isDragging = false; });
-        
+        // 觸控監聽：面板開啟時放行原生滾動，未開啟時轉動輪盤
         window.addEventListener('touchstart', (e) => { 
+            if (currentActiveIndex !== -1) return;
             isDragging = true; 
-            previousTouchX = e.touches[0].clientX; 
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            previousTouchX = touchStartX; 
         }, { passive: true });
         
         window.addEventListener('touchmove', (e) => {
             if (!isDragging || currentActiveIndex !== -1) return;
             const deltaX = e.touches[0].clientX - previousTouchX;
-            targetRotation += deltaX * 0.006; // ✨ 觸控直接增加旋轉目標
+            targetRotation += deltaX * 0.007;
             previousTouchX = e.touches[0].clientX;
         }, { passive: true });
         
-        window.addEventListener('touchend', () => { isDragging = false; });
-
-        document.getElementById('brand').addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (currentActiveIndex !== -1) {
-                exitDetailMode();
+        window.addEventListener('touchend', (e) => { 
+            if (currentActiveIndex !== -1) return;
+            isDragging = false; 
+            const deltaX = Math.abs(e.changedTouches[0].clientX - touchStartX);
+            const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartY);
+            if (deltaX < 10 && deltaY < 10) {
+                onClick(e);
             }
         });
 
-        const audioBtn = document.getElementById('audio-toggle');
-        const bgMusic = document.getElementById('bg-music');
-        const iconOn = document.getElementById('icon-sound-on');
-        const iconOff = document.getElementById('icon-sound-off');
-        let isPlaying = false;
-
-        audioBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); 
-            if (isPlaying) {
-                bgMusic.pause();
-                iconOn.style.display = 'none';
-                iconOff.style.display = 'block';
-            } else {
-                bgMusic.play();
-                iconOn.style.display = 'block';
-                iconOff.style.display = 'none';
-            }
-            isPlaying = !isPlaying;
-        });
-
-        const glassPanel = document.getElementById('glass-panel');
-        glassPanel.addEventListener('click', (e) => {
-            e.stopPropagation(); 
-            if (glassPanel.classList.contains('half-open')) {
-                glassPanel.classList.remove('half-open');
-                glassPanel.classList.add('full-open');
-            }
-        });
-
-        document.querySelector('.panel-handle').addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (glassPanel.classList.contains('full-open')) {
-                glassPanel.classList.remove('full-open');
-                glassPanel.classList.add('half-open');
-            } else {
-                glassPanel.classList.remove('half-open');
-                glassPanel.classList.add('full-open');
-            }
-        });
+        setupUIEvents();
 
         const loaderDiv = document.getElementById('loader');
         loaderDiv.style.opacity = 0;
-        setTimeout(() => loaderDivDiv.remove(), 500);
+        setTimeout(() => loaderDiv.remove(), 500);
 
         animate();
     }
@@ -475,21 +331,25 @@
         status.innerText = "FETCHING DATA...";
         try {
             const nocache = new Date().getTime();
-            // 💡 修正關鍵：移除原本多餘的 API_URL 前綴，使相對路徑完全對齊 GitHub 結構
+            
+            // 💡 新增頁面只需在此陣列加入代號（例如 'e', 'f'）
             const items = ['a', 'b', 'c', 'd', 'e']; 
 
             projects = await Promise.all(items.map(async (name, index) => {
                 let desc = "";
                 let customTitle = name.toUpperCase(); 
                 
+                // 💡 在此修改各頁面的主標題
                 if (name === 'a') customTitle = "JUBY 2014"; 
                 if (name === 'b') customTitle = "JUBY FALL"; 
                 if (name === 'c') customTitle = "JUBY DANCE"; 
                 if (name === 'd') customTitle = "JUBY STUDIO"; 
 
+                // 優先嘗試抓取 .md，若無則抓取 .txt
                 try {
-                    const r = await fetch(`txts/${name}.txt?t=${nocache}`);
-                    if(r.ok) desc = await r.text();
+                    let r = await fetch(`txts/${name}.md?t=${nocache}`);
+                    if (!r.ok) r = await fetch(`txts/${name}.txt?t=${nocache}`);
+                    if (r.ok) desc = await r.text();
                 } catch(e){}
 
                 return {
@@ -575,7 +435,6 @@
             const z = Math.cos(angle) * RADIUS;
 
             const geometry = new THREE.PlaneGeometry(3.6, 2.4); 
-            
             const material = new THREE.MeshStandardMaterial({ 
                 color: 0x999999, 
                 side: THREE.DoubleSide, 
@@ -649,17 +508,16 @@
         switchPreviewModel(dataIndex);
         
         const p = projects[dataIndex];
-        
         document.getElementById('detail-panel-title').innerText = p.title;
-        document.getElementById('detail-desc').innerHTML = p.desc;
+        
+        // 💡 使用 marked.js 將 Markdown 或純文字轉為 HTML 排版
+        document.getElementById('detail-desc').innerHTML = typeof marked !== 'undefined' ? marked.parse(p.desc) : p.desc;
         
         const panel = document.getElementById('glass-panel');
-        panel.classList.remove('full-open');
-        panel.classList.add('half-open');
+        panel.classList.add('full-open');
         document.body.classList.add('panel-open');
 
         centerModelTargetScale = p.normalizedScale * 2.5; 
-        
         activeCardUUID = cardMesh.uuid;
         cardMesh.userData.targetLocalY = 50; 
         cardMesh.userData.targetOpacity = 0; 
@@ -667,7 +525,7 @@
 
     function exitDetailMode() {
         currentActiveIndex = -1;
-        document.getElementById('glass-panel').classList.remove('half-open', 'full-open');
+        document.getElementById('glass-panel').classList.remove('full-open');
         document.body.classList.remove('panel-open');
         
         const p = projects[previewIndex];
@@ -690,13 +548,26 @@
     }
 
     function onClick(event) {
+        if (currentActiveIndex !== -1) {
+            const path = event.composedPath ? event.composedPath() : [];
+            const isContent = path.some(el => el.classList && el.classList.contains('panel-content'));
+            if (!isContent && event.target.id !== 'audio-toggle') exitDetailMode();
+            return;
+        }
+
+        const clientX = event.clientX || (event.changedTouches && event.changedTouches[0].clientX);
+        const clientY = event.clientY || (event.changedTouches && event.changedTouches[0].clientY);
+        if (clientX === undefined || clientY === undefined) return;
+
+        mouse.x = (clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+
         raycaster.setFromCamera(mouse, camera);
         const intersects = raycaster.intersectObjects(cardMeshes);
 
         if (intersects.length > 0) {
             const hit = intersects[0].object;
             const dataIndex = hit.userData.dataIndex;
-            
             if (currentActiveIndex === dataIndex) return;
 
             enterDetailMode(hit);
@@ -710,10 +581,37 @@
             if (diff > Math.PI) targetAngle -= twoPi;
             else if (diff < -Math.PI) targetAngle += twoPi;
             targetRotation = targetAngle;
-
-        } else {
-            exitDetailMode();
         }
+    }
+
+    function setupUIEvents() {
+        document.getElementById('brand').addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (currentActiveIndex !== -1) exitDetailMode();
+        });
+
+        document.getElementById('close-btn').addEventListener('click', exitDetailMode);
+        document.querySelector('.panel-handle').addEventListener('click', exitDetailMode);
+
+        const audioBtn = document.getElementById('audio-toggle');
+        const bgMusic = document.getElementById('bg-music');
+        const iconOn = document.getElementById('icon-sound-on');
+        const iconOff = document.getElementById('icon-sound-off');
+        let isPlaying = false;
+
+        audioBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); 
+            if (isPlaying) {
+                bgMusic.pause();
+                iconOn.style.display = 'none';
+                iconOff.style.display = 'block';
+            } else {
+                bgMusic.play();
+                iconOn.style.display = 'block';
+                iconOff.style.display = 'none';
+            }
+            isPlaying = !isPlaying;
+        });
     }
 
     function onWindowResize() {
@@ -723,14 +621,16 @@
     }
 
     function onWheel(event) {
-        targetRotation += event.deltaY * 0.0008;
+        if (currentActiveIndex === -1) {
+            targetRotation += event.deltaY * 0.0008;
+        }
     }
 
     function onMouseMove(event) {
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
         
-        if (!isDragging) {
+        if (!isDragging && currentActiveIndex === -1) {
             const targetCamX = -mouse.x * 4; 
             const targetCamY = mouse.y * 4 + CAMERA_BASE_Y;
             camera.position.x += (targetCamX - camera.position.x) * 0.05;
@@ -761,16 +661,8 @@
             lights[3].position.y = 12 - Math.cos(time * 2) * 2;
         }
 
-        // 💡 修正滑鼠與手動拖拽累加
-        if (isDragging) {
-            currentRotation += (targetRotation - currentRotation) * 0.2;
-        } else {
-            currentRotation += (targetRotation - currentRotation) * 0.06;
-        }
-        
-        if (carouselGroup) {
-            carouselGroup.rotation.y = currentRotation;
-        }
+        currentRotation += (targetRotation - currentRotation) * 0.06;
+        if (carouselGroup) carouselGroup.rotation.y = currentRotation;
 
         cardMeshes.forEach(mesh => {
             const target = mesh.userData.targetLocalY;
