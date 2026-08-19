@@ -43,4 +43,4 @@ Venue: Taichung Art Museum, Green Museumbrary 5F Cultural Forest
 Event: Subconscious Restaurant
 Organizer: White Fungus
 Photography: Frankie Chang 張芳瑄
-Costume: JUBY<p>
+Costume: JUBY</p>
