@@ -98,10 +98,10 @@
         }
 
         #ui-title { 
-            font-size: 5.5rem; 
+            font-size: 4.5rem; 
             font-weight: 900; 
             margin: 0; 
-            line-height: 0.85; 
+            line-height: 0.95; 
             text-transform: uppercase; 
             font-family: 'Inter', sans-serif; 
             word-break: break-word; 
@@ -110,7 +110,7 @@
         #ui-subtitle {
             font-size: 1.2rem;
             font-weight: 700;
-            margin: 0;
+            margin: 8px 0 0 0;
             padding-left: 12px;
             border-left: 4px solid #ffffff; 
             line-height: 1.2;
@@ -123,29 +123,25 @@
             left: 0;
             width: 100%;
             height: 85vh; 
-            background: rgba(255, 255, 255, 0.01); 
-            backdrop-filter: blur(3px); 
-            -webkit-backdrop-filter: blur(3px);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(42, 32, 34, 0.92); 
+            backdrop-filter: blur(15px); 
+            -webkit-backdrop-filter: blur(15px);
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
             box-shadow: 0 -10px 40px rgba(0,0,0,0.02); 
             border-radius: 30px 30px 0 0; 
             transform: translateY(100%); 
-            transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); 
-            z-index: 20;
+            transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); 
+            z-index: 100;
             display: flex;
             flex-direction: column;
             align-items: center;
             box-sizing: border-box;
-            cursor: pointer; 
+            pointer-events: none;
         }
 
-        #glass-panel.half-open { transform: translateY(60%); }
         #glass-panel.full-open { 
             transform: translateY(0%); 
-            background: rgba(255, 255, 255, 0.2); 
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            cursor: default; 
+            pointer-events: auto;
         }
 
         .panel-handle {
@@ -154,57 +150,60 @@
             background: rgba(255,255,255,0.4); 
             border-radius: 5px;
             margin-top: 15px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             flex-shrink: 0;
             cursor: pointer; 
         }
 
+        #close-btn {
+            position: absolute;
+            top: 20px;
+            right: 25px;
+            width: 30px;
+            height: 30px;
+            color: white;
+            font-size: 24px;
+            display: none;
+            z-index: 110;
+            cursor: pointer;
+        }
+        body.panel-open #close-btn { display: block; }
+
         .panel-content {
             width: 100%; 
-            max-width: 100%; 
-            padding: 0 40px; 
+            max-width: 1200px; 
+            padding: 0 40px 80px 40px; 
             box-sizing: border-box;
             display: flex;
-            gap: 50px;
+            flex-direction: column;
+            gap: 30px;
             opacity: 0;
-            transition: opacity 0.8s; 
+            transition: opacity 0.5s; 
             height: 100%;
-            padding-bottom: 50px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
         }
 
-        #glass-panel.half-open .panel-content,
         #glass-panel.full-open .panel-content { opacity: 1; }
 
-        .panel-left { 
-            flex: 1; 
-            padding-top: 200px; 
-        }
+        .panel-left { width: 100%; }
         .panel-title-text { 
-            font-size: 3.5rem; 
+            font-size: 3rem; 
             font-weight: 900; 
             color: #ffffff; 
             line-height: 1.1; 
             word-break: break-word; 
         }
 
-        .panel-right { 
-            flex: 3; 
-            overflow-y: auto; 
-            padding-right: 25px; 
-            padding-bottom: 100px; 
-        }
-
-        .panel-right::-webkit-scrollbar { width: 4px; }
-        .panel-right::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.4); border-radius: 4px; }
-        .panel-right::-webkit-scrollbar-track { background: transparent; }
-
-        .detail-text { width: 100%; }
+        .panel-right { width: 100%; }
+        .detail-text { width: 100%; color: #eeeeee; font-size: 1.05rem; line-height: 1.8; }
         .detail-text img {
             max-width: 100%;
             height: auto;
             border-radius: 8px; 
-            margin-bottom: 25px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08); 
+            margin: 20px 0; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
             display: block;
         }
         .detail-text h2 {
@@ -214,10 +213,21 @@
             color: #ffffff;
         }
         .detail-text p {
-            font-size: 1.1rem;
-            line-height: 1.8;
-            color: #eeeeee;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
+        }
+
+        @media (min-width: 769px) {
+            .panel-content { flex-direction: row; gap: 60px; }
+            .panel-left { flex: 1; padding-top: 40px; }
+            .panel-right { flex: 2; padding-top: 40px; }
+        }
+        @media (max-width: 768px) {
+            #brand { top: 20px; left: 20px; font-size: 1rem; }
+            #audio-toggle { top: 15px; right: 20px; width: 40px; height: 40px; }
+            #ui-layer { left: 20px; bottom: 10%; width: calc(100% - 40px); }
+            #ui-title { font-size: 3rem; }
+            .panel-content { padding: 0 20px 60px 20px; }
+            .panel-title-text { font-size: 2.2rem; }
         }
     </style>
     
@@ -261,6 +271,7 @@
 
     <div id="glass-panel">
         <div class="panel-handle"></div>
+        <div id="close-btn">✕</div>
         <div class="panel-content">
             <div class="panel-left">
                 <div class="panel-title-text" id="detail-panel-title"></div>
@@ -296,8 +307,9 @@
 
     let centerModelTargetScale = 2.0;
 
-    const CAMERA_BASE_Y = 22;
-    const CAMERA_BASE_Z = 75;
+    let isMobile = window.innerWidth / window.innerHeight < 1;
+    let CAMERA_BASE_Y = isMobile ? 32 : 22;
+    let CAMERA_BASE_Z = isMobile ? 125 : 75; // 手機版拉遠視距，讓圓看起來更小更精緻
 
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
@@ -307,7 +319,10 @@
     let studioEnvMap;
 
     let isDragging = false;
+    let touchStartX = 0;
+    let touchStartY = 0;
     let previousTouchX = 0;
+    let hasMoved = false;
 
     init();
 
@@ -316,11 +331,11 @@
 
         scene = new THREE.Scene();
         scene.background = new THREE.Color(SPACE_COLOR);
-        scene.fog = new THREE.Fog(SPACE_COLOR, 40, 140); 
+        scene.fog = new THREE.Fog(SPACE_COLOR, 40, 160); 
 
-        camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 300);
+        camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 400);
         camera.position.set(0, CAMERA_BASE_Y, CAMERA_BASE_Z); 
-        camera.lookAt(0, 0, 0);
+        camera.lookAt(0, isMobile ? 2 : 0, 0);
         
         camera.layers.enable(0);
         camera.layers.enable(1);
@@ -349,69 +364,36 @@
         window.addEventListener('mousemove', onMouseMove);
         window.addEventListener('click', onClick);
 
-        window.addEventListener('mousedown', (e) => { isDragging = true; });
-        window.addEventListener('mouseup', () => { isDragging = false; });
-        
+        // 手機觸控精準分流：滑動旋轉 vs 輕點選取
         window.addEventListener('touchstart', (e) => { 
+            if (currentActiveIndex !== -1) return;
             isDragging = true; 
-            previousTouchX = e.touches[0].clientX; 
+            hasMoved = false;
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            previousTouchX = touchStartX; 
         }, { passive: true });
         
         window.addEventListener('touchmove', (e) => {
             if (!isDragging || currentActiveIndex !== -1) return;
             const deltaX = e.touches[0].clientX - previousTouchX;
-            targetRotation += deltaX * 0.006;
+            if (Math.abs(e.touches[0].clientX - touchStartX) > 8) {
+                hasMoved = true;
+            }
+            targetRotation += deltaX * 0.007;
             previousTouchX = e.touches[0].clientX;
         }, { passive: true });
         
-        window.addEventListener('touchend', () => { isDragging = false; });
-
-        document.getElementById('brand').addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (currentActiveIndex !== -1) {
-                exitDetailMode();
+        window.addEventListener('touchend', (e) => { 
+            if (currentActiveIndex !== -1) return;
+            isDragging = false; 
+            if (!hasMoved) {
+                const touch = e.changedTouches[0];
+                handleRaycast(touch.clientX, touch.clientY);
             }
         });
 
-        const audioBtn = document.getElementById('audio-toggle');
-        const bgMusic = document.getElementById('bg-music');
-        const iconOn = document.getElementById('icon-sound-on');
-        const iconOff = document.getElementById('icon-sound-off');
-        let isPlaying = false;
-
-        audioBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (isPlaying) {
-                bgMusic.pause();
-                iconOn.style.display = 'none';
-                iconOff.style.display = 'block';
-            } else {
-                bgMusic.play();
-                iconOn.style.display = 'block';
-                iconOff.style.display = 'none';
-            }
-            isPlaying = !isPlaying;
-        });
-
-        const glassPanel = document.getElementById('glass-panel');
-        glassPanel.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (glassPanel.classList.contains('half-open')) {
-                glassPanel.classList.remove('half-open');
-                glassPanel.classList.add('full-open');
-            }
-        });
-
-        document.querySelector('.panel-handle').addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (glassPanel.classList.contains('full-open')) {
-                glassPanel.classList.remove('full-open');
-                glassPanel.classList.add('half-open');
-            } else {
-                glassPanel.classList.remove('half-open');
-                glassPanel.classList.add('full-open');
-            }
-        });
+        setupUIEvents();
 
         const loaderDiv = document.getElementById('loader');
         if (loaderDiv) {
@@ -479,9 +461,26 @@
 
             projects = await Promise.all(items.map(async (name, index) => {
                 let desc = "";
-                let customTitle = name.toUpperCase(); 
+                let customTitle = "";
+                let customSubtitle = "";
                 
-                if (name === 'a') customTitle = "JUBY 2014"; 
+                // 💡 在此修改各頁面的大標題與副標題
+                if (name === 'a') {
+                    customTitle = "篝火";
+                    customSubtitle = "-篝火-";
+                } else if (name === 'b') {
+                    customTitle = "JUBY FALL";
+                    customSubtitle = "AUTUMN WINTER";
+                } else if (name === 'c') {
+                    customTitle = "JUBY DANCE";
+                    customSubtitle = "STAGE PERFORMANCE";
+                } else if (name === 'd') {
+                    customTitle = "JUBY STUDIO";
+                    customSubtitle = "CREATIVE SPACE";
+                } else if (name === 'e') {
+                    customTitle = "EXPERIMENTAL";
+                    customSubtitle = "3D ARTWORK";
+                }
 
                 try {
                     const r = await fetch(`txts/${name}.txt?t=${nocache}`);
@@ -490,8 +489,8 @@
 
                 return {
                     id: index,
-                    letter: name.toUpperCase(), 
                     title: customTitle, 
+                    subtitle: customSubtitle,
                     image: `images/${name}.png?t=${nocache}`, 
                     model: `models/${name}.glb`,
                     desc: desc,
@@ -539,14 +538,15 @@
                     const size = new THREE.Vector3();
                     box.getSize(size);
                     const maxDim = Math.max(size.x, size.y, size.z);
-                    project.normalizedScale = 4.0 / maxDim;
+                    project.normalizedScale = 3.0 / maxDim;
 
                     model.visible = false; 
                     centerModelGroup.add(model);
                     project.sceneObject = model;
 
                     loaded++;
-                    document.getElementById('progress-fill').style.width = Math.round((loaded / total) * 100) + "%";
+                    const progressFill = document.getElementById('progress-fill');
+                    if (progressFill) progressFill.style.width = Math.round((loaded / total) * 100) + "%";
                     resolve();
                 }, undefined, () => resolve());
             });
@@ -590,7 +590,7 @@
                     material.needsUpdate = true;
                 },
                 undefined,
-                (err) => {}
+                () => {}
             );
 
             const mesh = new THREE.Mesh(geometry, material);
@@ -625,7 +625,7 @@
                     p.sceneObject.rotation.y = 0;
                     p.sceneObject.position.y = MODEL_FIXED_Y;
                     if (currentActiveIndex === -1) {
-                        centerModelTargetScale = p.normalizedScale * 2.0;
+                        centerModelTargetScale = p.normalizedScale * (isMobile ? 1.5 : 2.0);
                     }
                 }
             }
@@ -635,8 +635,34 @@
     function updateUIText(dataIndex) {
         const p = projects[dataIndex];
         if(!p) return;
-        document.getElementById('ui-title').innerText = p.letter || "";
-        document.getElementById('ui-subtitle').innerText = p.title || ""; 
+        document.getElementById('ui-title').innerText = p.title || "";
+        document.getElementById('ui-subtitle').innerText = p.subtitle || ""; 
+    }
+
+    function handleRaycast(clientX, clientY) {
+        mouse.x = (clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(cardMeshes);
+
+        if (intersects.length > 0) {
+            const hit = intersects[0].object;
+            const dataIndex = hit.userData.dataIndex;
+            if (currentActiveIndex === dataIndex) return;
+
+            enterDetailMode(hit);
+            
+            let targetAngle = -hit.userData.originalAngle;
+            const currentRot = currentRotation;
+            const twoPi = Math.PI * 2;
+            const cycles = Math.floor(currentRot / twoPi);
+            targetAngle += cycles * twoPi;
+            const diff = targetAngle - currentRot;
+            if (diff > Math.PI) targetAngle -= twoPi;
+            else if (diff < -Math.PI) targetAngle += twoPi;
+            targetRotation = targetAngle;
+        }
     }
 
     function enterDetailMode(cardMesh) {
@@ -650,12 +676,10 @@
         document.getElementById('detail-desc').innerHTML = p.desc;
         
         const panel = document.getElementById('glass-panel');
-        panel.classList.remove('full-open');
-        panel.classList.add('half-open');
+        panel.classList.add('full-open');
         document.body.classList.add('panel-open');
 
         centerModelTargetScale = p.normalizedScale * 2.5; 
-        
         activeCardUUID = cardMesh.uuid;
         cardMesh.userData.targetLocalY = 50; 
         cardMesh.userData.targetOpacity = 0; 
@@ -663,11 +687,11 @@
 
     function exitDetailMode() {
         currentActiveIndex = -1;
-        document.getElementById('glass-panel').classList.remove('half-open', 'full-open');
+        document.getElementById('glass-panel').classList.remove('full-open');
         document.body.classList.remove('panel-open');
         
         const p = projects[previewIndex];
-        if(p) centerModelTargetScale = p.normalizedScale * 2.0; 
+        if(p) centerModelTargetScale = p.normalizedScale * (isMobile ? 1.5 : 2.0); 
         
         if (activeCardUUID) {
             const mesh = cardMeshes.find(m => m.uuid === activeCardUUID);
@@ -686,47 +710,72 @@
     }
 
     function onClick(event) {
-        raycaster.setFromCamera(mouse, camera);
-        const intersects = raycaster.intersectObjects(cardMeshes);
-
-        if (intersects.length > 0) {
-            const hit = intersects[0].object;
-            const dataIndex = hit.userData.dataIndex;
-            
-            if (currentActiveIndex === dataIndex) return;
-
-            enterDetailMode(hit);
-            
-            let targetAngle = -hit.userData.originalAngle;
-            const currentRot = currentRotation;
-            const twoPi = Math.PI * 2;
-            const cycles = Math.floor(currentRot / twoPi);
-            targetAngle += cycles * twoPi;
-            const diff = targetAngle - currentRot;
-            if (diff > Math.PI) targetAngle -= twoPi;
-            else if (diff < -Math.PI) targetAngle += twoPi;
-            targetRotation = targetAngle;
-
-        } else {
-            exitDetailMode();
+        if (currentActiveIndex !== -1) {
+            const path = event.composedPath ? event.composedPath() : [];
+            const isContent = path.some(el => el.classList && el.classList.contains('panel-content'));
+            if (!isContent && event.target.id !== 'audio-toggle') exitDetailMode();
+            return;
         }
+
+        handleRaycast(event.clientX, event.clientY);
+    }
+
+    function setupUIEvents() {
+        document.getElementById('brand').addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (currentActiveIndex !== -1) {
+                exitDetailMode();
+            }
+        });
+
+        document.getElementById('close-btn').addEventListener('click', exitDetailMode);
+        document.querySelector('.panel-handle').addEventListener('click', exitDetailMode);
+
+        const audioBtn = document.getElementById('audio-toggle');
+        const bgMusic = document.getElementById('bg-music');
+        const iconOn = document.getElementById('icon-sound-on');
+        const iconOff = document.getElementById('icon-sound-off');
+        let isPlaying = false;
+
+        audioBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (isPlaying) {
+                bgMusic.pause();
+                iconOn.style.display = 'none';
+                iconOff.style.display = 'block';
+            } else {
+                bgMusic.play();
+                iconOn.style.display = 'block';
+                iconOff.style.display = 'none';
+            }
+            isPlaying = !isPlaying;
+        });
     }
 
     function onWindowResize() {
+        isMobile = window.innerWidth / window.innerHeight < 1;
+        CAMERA_BASE_Y = isMobile ? 32 : 22;
+        CAMERA_BASE_Z = isMobile ? 125 : 75;
+
         camera.aspect = window.innerWidth / window.innerHeight;
+        camera.position.set(0, CAMERA_BASE_Y, CAMERA_BASE_Z);
+        camera.lookAt(0, isMobile ? 2 : 0, 0);
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
     }
 
     function onWheel(event) {
-        targetRotation += event.deltaY * 0.0008;
+        if (currentActiveIndex === -1) {
+            targetRotation += event.deltaY * 0.0008;
+        }
     }
 
     function onMouseMove(event) {
+        if (isMobile) return;
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
         
-        if (!isDragging) {
+        if (!isDragging && currentActiveIndex === -1) {
             const targetCamX = -mouse.x * 4; 
             const targetCamY = mouse.y * 4 + CAMERA_BASE_Y;
             camera.position.x += (targetCamX - camera.position.x) * 0.05;
@@ -757,12 +806,7 @@
             lights[3].position.y = 12 - Math.cos(time * 2) * 2;
         }
 
-        if (isDragging) {
-            currentRotation += (targetRotation - currentRotation) * 0.2;
-        } else {
-            currentRotation += (targetRotation - currentRotation) * 0.06;
-        }
-        
+        currentRotation += (targetRotation - currentRotation) * 0.06;
         if (carouselGroup) {
             carouselGroup.rotation.y = currentRotation;
         }
@@ -779,7 +823,7 @@
             }
         });
 
-        if (currentActiveIndex === -1) {
+        if (currentActiveIndex === -1 && !isMobile) {
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObjects(cardMeshes);
             
