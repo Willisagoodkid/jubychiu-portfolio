@@ -9,9 +9,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&family=Inter:wght@900&display=swap" rel="stylesheet">
 
-    <!-- Markdown 解析庫 -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
     <style>
         body { 
             margin: 0; 
@@ -184,6 +181,22 @@
     let lights = [], studioEnvMap;
     let isDragging = false, touchStartX = 0, touchStartY = 0, previousTouchX = 0, hasMoved = false;
 
+    // 原生輕量 Markdown 解析器，不依賴任何外部 CDN
+    function parseSimpleMarkdown(text) {
+        if (!text) return "";
+        let html = text
+            .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+            .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+            .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+            .replace(/\*\*(.*)\*\*/gim, '<b>$1</b>')
+            .replace(/\*(.*)\*/gim, '<i>$1</i>')
+            .replace(/!\[(.*?)\]\((.*?)\)/gim, '<img alt="$1" src="$2" />')
+            .replace(/^\* (.*$)/gim, '<li>$1</li>')
+            .replace(/\n\n/gim, '</p><p>')
+            .replace(/\n/gim, '<br />');
+        return '<p>' + html + '</p>';
+    }
+
     init();
 
     async function init() {
@@ -212,7 +225,7 @@
 
         await fetchData();
         createCarousel();[cite: 1, 2]
-        preloadAllModels(); // 背景載入模型，不阻塞畫面
+        preloadAllModels();
 
         window.addEventListener('resize', onWindowResize);[cite: 1, 2]
         window.addEventListener('wheel', onWheel);[cite: 1, 2]
@@ -301,8 +314,6 @@
 
     async function fetchData() {
         const nocache = new Date().getTime();[cite: 1, 2]
-        
-        // 💡 1. 這裡列出你所有的作品檔名
         const items = ['a', 'b', 'c', 'd']; 
 
         projects = await Promise.all(items.map(async (name, index) => {
@@ -310,7 +321,6 @@
             let customTitle = "";
             let customSubtitle = "";
             
-            // 💡 2. 這裡修改首頁左下角與內頁的大標題、副標題（不顯示 ABCDE）
             if (name === 'a') {
                 customTitle = "JUBY 2014";
                 customSubtitle = "COLLECTION 2014";
@@ -326,9 +336,13 @@
             }
 
             try {
-                let r = await fetch(`txts/${name}.md?t=${nocache}`);
-                if (!r.ok) r = await fetch(`txts/${name}.txt?t=${nocache}`);
-                if (r.ok) desc = await r.text();
+                const resMd = await fetch(`txts/${name}.md?t=${nocache}`).catch(() => null);
+                if (resMd && resMd.ok) {
+                    desc = await resMd.text();
+                } else {
+                    const resTxt = await fetch(`txts/${name}.txt?t=${nocache}`).catch(() => null);
+                    if (resTxt && resTxt.ok) desc = await resTxt.text();
+                }
             } catch(e){}
 
             return {
@@ -407,9 +421,9 @@
             const material = new THREE.MeshStandardMaterial({ 
                 color: 0xffffff, 
                 side: THREE.DoubleSide,[cite: 1, 2]
-                transparent: true,      [cite: 1, 2]
-                opacity: 0.7,         [cite: 1, 2]
-                roughness: 0.4,       [cite: 1, 2]
+                transparent: true,     [cite: 1, 2]
+                opacity: 0.7,        [cite: 1, 2]
+                roughness: 0.4,      [cite: 1, 2]
                 metalness: 0.2[cite: 1, 2]
             });
 
@@ -429,10 +443,10 @@
                 id: i,[cite: 1, 2]
                 dataIndex: dataIndex,[cite: 1, 2]
                 originalAngle: angle,[cite: 1, 2]
-                targetLocalY: 0, [cite: 1, 2]
+                targetLocalY: 0,[cite: 1, 2]
                 currentLocalY: 0,[cite: 1, 2]
                 targetOpacity: 0.7,[cite: 1, 2]
-                baseOpacity: 0.7   [cite: 1, 2]
+                baseOpacity: 0.7  [cite: 1, 2]
             };
             carouselGroup.add(mesh);[cite: 1, 2]
             cardMeshes.push(mesh);[cite: 1, 2]
@@ -493,7 +507,7 @@
         
         const p = projects[dataIndex];[cite: 1, 2]
         document.getElementById('detail-panel-title').innerText = p.title;[cite: 1, 2]
-        document.getElementById('detail-desc').innerHTML = typeof marked !== 'undefined' ? marked.parse(p.desc) : p.desc;
+        document.getElementById('detail-desc').innerHTML = parseSimpleMarkdown(p.desc);
         
         const panel = document.getElementById('glass-panel');[cite: 1, 2]
         panel.classList.add('full-open');
@@ -550,7 +564,7 @@
         let isPlaying = false;[cite: 1, 2]
 
         audioBtn.addEventListener('click', (e) => {[cite: 1, 2]
-            e.stopPropagation();   [cite: 1, 2]
+            e.stopPropagation();  [cite: 1, 2]
             if (isPlaying) {[cite: 1, 2]
                 bgMusic.pause();[cite: 1, 2]
                 iconOn.style.display = 'none';[cite: 1, 2]
@@ -589,7 +603,7 @@
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;[cite: 1, 2]
         
         if (!isDragging && currentActiveIndex === -1) {[cite: 1, 2]
-            const targetCamX = -mouse.x * 4;  [cite: 1, 2]
+            const targetCamX = -mouse.x * 4; [cite: 1, 2]
             const targetCamY = mouse.y * 4 + CAMERA_BASE_Y;[cite: 1, 2]
             camera.position.x += (targetCamX - camera.position.x) * 0.05;[cite: 1, 2]
             camera.position.y += (targetCamY - camera.position.y) * 0.05;[cite: 1, 2]
@@ -600,7 +614,7 @@
     function animate() {
         requestAnimationFrame(animate);[cite: 1, 2]
 
-        const time = Date.now() * 0.0002; [cite: 1, 2]
+        const time = Date.now() * 0.0002;[cite: 1, 2]
         if (lights.length === 4) {[cite: 1, 2]
             lights[0].position.x = Math.sin(time) * 25;[cite: 1, 2]
             lights[0].position.z = Math.cos(time) * 25;[cite: 1, 2]
@@ -643,7 +657,7 @@
             cardMeshes.forEach(mesh => {[cite: 1, 2]
                 if (mesh.uuid !== activeCardUUID) {[cite: 1, 2]
                     mesh.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);[cite: 1, 2]
-                    mesh.userData.targetOpacity = mesh.userData.baseOpacity; [cite: 1, 2]
+                    mesh.userData.targetOpacity = mesh.userData.baseOpacity;[cite: 1, 2]
                 }
             });
             document.body.style.cursor = 'default';[cite: 1, 2]
@@ -667,7 +681,7 @@
         projects.forEach(p => {[cite: 1, 2]
             if (p.sceneObject && p.sceneObject.visible) {[cite: 1, 2]
                 p.sceneObject.rotation.y += 0.005;[cite: 1, 2]
-                p.sceneObject.position.y = MODEL_FIXED_Y; [cite: 1, 2]
+                p.sceneObject.position.y = MODEL_FIXED_Y;[cite: 1, 2]
 
                 const currentS = p.sceneObject.scale.x;[cite: 1, 2]
                 const nextS = currentS + (centerModelTargetScale - currentS) * 0.05;[cite: 1, 2]
