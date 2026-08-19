@@ -41,15 +41,17 @@
 
         #audio-toggle {
             position: absolute; top: 25px; right: 40px; width: 45px; height: 45px;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             display: flex; justify-content: center; align-items: center;
-            color: #ffffff; cursor: pointer; z-index: 20;
-            transition: all 0.3s ease; pointer-events: auto;
+            color: #ffffff; cursor: pointer; z-index: 200;
+            transition: transform 0.2s ease, background 0.3s ease;
+            pointer-events: auto;
         }
-        #audio-toggle svg { width: 22px; height: 22px; fill: currentColor; }
+        #audio-toggle:active { transform: scale(0.9); }
+        #audio-toggle svg { width: 22px; height: 22px; fill: currentColor; pointer-events: none; }
 
         #ui-layer {
             position: absolute; bottom: 15%; left: 8%; width: 600px; 
@@ -138,7 +140,7 @@
 </head>
 <body>
 
-    <audio id="bg-music" loop><source src="music.mp3" type="audio/mpeg"></audio>
+    <audio id="bg-music" loop preload="auto"><source src="music.mp3" type="audio/mpeg"></audio>
 
     <div id="loader">
         <div id="loader-text">INITIALIZING...</div>
@@ -190,6 +192,12 @@
 
     let lights = [], studioEnvMap;
     let isDragging = false, touchStartTime = 0, touchStartX = 0, touchStartY = 0, previousTouchX = 0;
+    
+    // 微動視差控制變數
+    let touchMoveOffsetX = 0;
+    let touchMoveOffsetY = 0;
+
+    let audioInitialized = false;
 
     init();
 
@@ -222,8 +230,9 @@
         window.addEventListener('mousemove', onMouseMove);
         window.addEventListener('click', onMouseClick);
 
-        // 觸控分流：滑動旋轉 vs 點擊選取
+        // 手機觸控事件監聽
         window.addEventListener('touchstart', (e) => {
+            tryAutoPlayAudio();
             if (currentActiveIndex !== -1) return;
             isDragging = true;
             touchStartTime = Date.now();
@@ -234,9 +243,15 @@
 
         window.addEventListener('touchmove', (e) => {
             if (!isDragging || currentActiveIndex !== -1) return;
-            const deltaX = e.touches[0].clientX - previousTouchX;
+            const currentX = e.touches[0].clientX;
+            const currentY = e.touches[0].clientY;
+            const deltaX = currentX - previousTouchX;
             targetRotation += deltaX * 0.006;
-            previousTouchX = e.touches[0].clientX;
+            previousTouchX = currentX;
+
+            // 紀錄手指相對於螢幕中心的微位移量
+            touchMoveOffsetX = ((currentX / window.innerWidth) * 2 - 1) * 1.5;
+            touchMoveOffsetY = -((currentY / window.innerHeight) * 2 - 1) * 1.5;
         }, { passive: true });
 
         window.addEventListener('touchend', (e) => {
@@ -246,6 +261,10 @@
             const touchEndX = e.changedTouches[0].clientX;
             const touchEndY = e.changedTouches[0].clientY;
             const moveDist = Math.hypot(touchEndX - touchStartX, touchEndY - touchStartY);
+
+            // 手指放開時微動視差漸進歸零
+            touchMoveOffsetX = 0;
+            touchMoveOffsetY = 0;
 
             if (touchEndTime - touchStartTime < 350 && moveDist < 12) {
                 performRaycast(touchEndX, touchEndY);
@@ -261,6 +280,18 @@
         }
 
         animate();
+    }
+
+    function tryAutoPlayAudio() {
+        if (audioInitialized) return;
+        const bgMusic = document.getElementById('bg-music');
+        if (bgMusic) {
+            bgMusic.play().then(() => {
+                audioInitialized = true;
+                document.getElementById('icon-sound-on').style.display = 'block';
+                document.getElementById('icon-sound-off').style.display = 'none';
+            }).catch(() => {});
+        }
     }
 
     function setupLightsAndFloor() {
@@ -308,7 +339,6 @@
             let customTitle = "";
             let customSubtitle = "";
             
-            // 💡 在此修改各頁面標題
             if (name === 'a') {
                 customTitle = "JUBY 2014";
                 customSubtitle = "COLLECTION 2014";
@@ -471,6 +501,7 @@
     }
 
     function onMouseClick(event) {
+        tryAutoPlayAudio();
         if (currentActiveIndex !== -1) {
             const path = event.composedPath ? event.composedPath() : [];
             const isContent = path.some(el => el.classList && el.classList.contains('panel-content'));
@@ -493,21 +524,23 @@
         const bgMusic = document.getElementById('bg-music');
         const iconOn = document.getElementById('icon-sound-on');
         const iconOff = document.getElementById('icon-sound-off');
-        let isPlaying = false;
 
-        audioBtn.addEventListener('click', (e) => {
+        const toggleMusic = (e) => {
             e.stopPropagation();
-            if (isPlaying) {
-                bgMusic.pause();
-                iconOn.style.display = 'none';
-                iconOff.style.display = 'block';
-            } else {
+            audioInitialized = true;
+            if (bgMusic.paused) {
                 bgMusic.play();
                 iconOn.style.display = 'block';
                 iconOff.style.display = 'none';
+            } else {
+                bgMusic.pause();
+                iconOn.style.display = 'none';
+                iconOff.style.display = 'block';
             }
-            isPlaying = !isPlaying;
-        });
+        };
+
+        audioBtn.addEventListener('click', toggleMusic);
+        audioBtn.addEventListener('touchend', toggleMusic);
     }
 
     function onWindowResize() {
@@ -532,14 +565,6 @@
         if (isMobile) return;
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-        
-        if (!isDragging && currentActiveIndex === -1) {
-            const targetCamX = -mouse.x * 4; 
-            const targetCamY = mouse.y * 4 + CAMERA_BASE_Y;
-            camera.position.x += (targetCamX - camera.position.x) * 0.05;
-            camera.position.y += (targetCamY - camera.position.y) * 0.05;
-            camera.lookAt(0, 0, 0);
-        }
     }
 
     function animate() {
@@ -572,6 +597,25 @@
         
         if (carouselGroup) {
             carouselGroup.rotation.y = currentRotation;
+        }
+
+        // 鏡頭位置插值（電腦滑鼠視差 / 手機觸控微動視差）
+        if (currentActiveIndex === -1) {
+            let targetCamX = 0;
+            let targetCamY = CAMERA_BASE_Y;
+
+            if (!isMobile) {
+                targetCamX = -mouse.x * 4;
+                targetCamY = mouse.y * 4 + CAMERA_BASE_Y;
+            } else {
+                // 手機觸控微動（限制在安全範圍）
+                targetCamX = touchMoveOffsetX;
+                targetCamY = CAMERA_BASE_Y + touchMoveOffsetY;
+            }
+
+            camera.position.x += (targetCamX - camera.position.x) * 0.05;
+            camera.position.y += (targetCamY - camera.position.y) * 0.05;
+            camera.lookAt(0, 0, 0);
         }
 
         cardMeshes.forEach(mesh => {
