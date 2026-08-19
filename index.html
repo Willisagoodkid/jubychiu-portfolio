@@ -9,6 +9,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&family=Inter:wght@900&display=swap" rel="stylesheet">
 
+    <!-- Markdown 解析庫 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
     <style>
         body { 
             margin: 0; 
@@ -22,10 +25,23 @@
         }
         canvas { display: block; }
         
+        #loader {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #6c5b5e; color: #ffffff; display: flex;[cite: 1, 2]
+            flex-direction: column;
+            justify-content: center; align-items: center; z-index: 999;
+            transition: opacity 0.5s; 
+        }
+        #loader-text { font-size: 1.2rem; font-weight: bold; letter-spacing: 2px; margin-bottom: 15px; }
+        #progress-bar { width: 200px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; overflow: hidden; }
+        #progress-fill { width: 0%; height: 100%; background: #ffffff; transition: width 0.2s; }
+
         #brand {
             position: absolute; top: 30px; left: 40px; color: #ffffff;
             font-size: 1.2rem; font-weight: bold; letter-spacing: 1px;
-            z-index: 10; cursor: pointer; pointer-events: auto; 
+            z-index: 10;
+            cursor: pointer;
+            pointer-events: auto; 
             transition: opacity 0.3s;
         }
         #brand:hover { opacity: 0.7; }
@@ -71,7 +87,7 @@
         }
         #glass-panel.full-open { 
             transform: translateY(0%); 
-            background: rgba(42, 32, 34, 0.92); 
+            background: rgba(42, 32, 34, 0.9); 
             pointer-events: auto;
         }
 
@@ -112,7 +128,7 @@
             #brand { top: 20px; left: 20px; font-size: 1rem; }
             #audio-toggle { top: 15px; right: 20px; width: 40px; height: 40px; }
             #ui-layer { left: 20px; bottom: 10%; width: calc(100% - 40px); }
-            #ui-title { font-size: 3rem; }
+            #ui-title { font-size: 3.2rem; }
             .panel-content { padding: 0 20px 60px 20px; }
             .panel-title-text { font-size: 2.2rem; }
         }
@@ -130,6 +146,12 @@
 <body>
 
     <audio id="bg-music" loop><source src="music.mp3" type="audio/mpeg"></audio>
+
+    <div id="loader">
+        <div id="loader-text">INITIALIZING...</div>
+        <div id="progress-bar"><div id="progress-fill"></div></div>
+    </div>
+    
     <div id="brand">Juby chiuuuuu studio &lt;3 .</div>
 
     <div id="audio-toggle">
@@ -172,41 +194,28 @@
     let centerModelTargetScale = 1.5;
 
     let isMobile = window.innerWidth / window.innerHeight < 1;
-    let CAMERA_BASE_Y = isMobile ? 28 : 22;
-    let CAMERA_BASE_Z = isMobile ? 110 : 75;
+    let CAMERA_BASE_Y = isMobile ? 30 : 22;
+    let CAMERA_BASE_Z = isMobile ? 115 : 75;
 
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
+    const manager = new THREE.LoadingManager();
 
     let lights = [], studioEnvMap;
     let isDragging = false, touchStartX = 0, touchStartY = 0, previousTouchX = 0, hasMoved = false;
 
-    // 原生輕量 Markdown 解析器，不依賴任何外部 CDN
-    function parseSimpleMarkdown(text) {
-        if (!text) return "";
-        let html = text
-            .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-            .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-            .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-            .replace(/\*\*(.*)\*\*/gim, '<b>$1</b>')
-            .replace(/\*(.*)\*/gim, '<i>$1</i>')
-            .replace(/!\[(.*?)\]\((.*?)\)/gim, '<img alt="$1" src="$2" />')
-            .replace(/^\* (.*$)/gim, '<li>$1</li>')
-            .replace(/\n\n/gim, '</p><p>')
-            .replace(/\n/gim, '<br />');
-        return '<p>' + html + '</p>';
-    }
-
     init();
 
     async function init() {
+        await fetchData();
+
         scene = new THREE.Scene();
         scene.background = new THREE.Color(SPACE_COLOR);[cite: 1, 2]
         scene.fog = new THREE.Fog(SPACE_COLOR, 40, 150); 
 
         camera = new THREE.PerspectiveCamera(isMobile ? 48 : 35, window.innerWidth / window.innerHeight, 0.1, 400);
         camera.position.set(0, CAMERA_BASE_Y, CAMERA_BASE_Z); 
-        camera.lookAt(0, isMobile ? 3 : 0, 0);
+        camera.lookAt(0, isMobile ? 4 : 0, 0);
         
         camera.layers.enable(0);[cite: 1, 2]
         camera.layers.enable(1);[cite: 1, 2]
@@ -223,9 +232,12 @@
 
         setupLightsAndFloor();[cite: 1, 2]
 
-        await fetchData();
+        if (projects.length > 0) {[cite: 1, 2]
+            await preloadAllModels();
+            switchPreviewModel(0);[cite: 1, 2]
+        }
+
         createCarousel();[cite: 1, 2]
-        preloadAllModels();
 
         window.addEventListener('resize', onWindowResize);[cite: 1, 2]
         window.addEventListener('wheel', onWheel);[cite: 1, 2]
@@ -261,6 +273,14 @@
         });
 
         setupUIEvents();
+
+        // 💡 修正關鍵：正確移除 loaderDiv，徹底告別卡在 INITIALIZING
+        const loaderDiv = document.getElementById('loader');
+        if (loaderDiv) {
+            loaderDiv.style.opacity = 0;
+            setTimeout(() => loaderDiv.remove(), 500);
+        }
+
         animate();[cite: 1, 2]
     }
 
@@ -313,94 +333,108 @@
     }
 
     async function fetchData() {
-        const nocache = new Date().getTime();[cite: 1, 2]
-        const items = ['a', 'b', 'c', 'd']; 
+        const status = document.getElementById('loader-text');[cite: 1, 2]
+        status.innerText = "FETCHING DATA...";[cite: 1, 2]
+        try {
+            const nocache = new Date().getTime();[cite: 1, 2]
+            const items = ['a', 'b', 'c', 'd', 'e']; 
 
-        projects = await Promise.all(items.map(async (name, index) => {
-            let desc = "";
-            let customTitle = "";
-            let customSubtitle = "";
-            
-            if (name === 'a') {
-                customTitle = "JUBY 2014";
-                customSubtitle = "COLLECTION 2014";
-            } else if (name === 'b') {
-                customTitle = "JUBY FALL";
-                customSubtitle = "AUTUMN WINTER";
-            } else if (name === 'c') {
-                customTitle = "JUBY DANCE";
-                customSubtitle = "STAGE PERFORMANCE";
-            } else if (name === 'd') {
-                customTitle = "JUBY STUDIO";
-                customSubtitle = "CREATIVE SPACE";
-            }
-
-            try {
-                const resMd = await fetch(`txts/${name}.md?t=${nocache}`).catch(() => null);
-                if (resMd && resMd.ok) {
-                    desc = await resMd.text();
-                } else {
-                    const resTxt = await fetch(`txts/${name}.txt?t=${nocache}`).catch(() => null);
-                    if (resTxt && resTxt.ok) desc = await resTxt.text();
+            projects = await Promise.all(items.map(async (name, index) => {
+                let desc = "";
+                let customTitle = "";
+                let customSubtitle = "";
+                
+                // 💡 在這裡修改大標題與副標題
+                if (name === 'a') {
+                    customTitle = "JUBY 2014";
+                    customSubtitle = "COLLECTION 2014";
+                } else if (name === 'b') {
+                    customTitle = "JUBY FALL";
+                    customSubtitle = "AUTUMN WINTER";
+                } else if (name === 'c') {
+                    customTitle = "JUBY DANCE";
+                    customSubtitle = "STAGE PERFORMANCE";
+                } else if (name === 'd') {
+                    customTitle = "JUBY STUDIO";
+                    customSubtitle = "CREATIVE SPACE";
+                } else if (name === 'e') {
+                    customTitle = "EXPERIMENTAL";
+                    customSubtitle = "3D ARTWORK";
                 }
-            } catch(e){}
 
-            return {
-                id: index,
-                name: name,
-                title: customTitle, 
-                subtitle: customSubtitle,
-                image: `images/${name}.png?t=${nocache}`, 
-                model: `models/${name}.glb`, 
-                desc: desc,
-                sceneObject: null,[cite: 1, 2]
-                normalizedScale: 1[cite: 1, 2]
-            };
-        }));
+                try {
+                    let r = await fetch(`txts/${name}.md?t=${nocache}`);
+                    if (!r.ok) r = await fetch(`txts/${name}.txt?t=${nocache}`);
+                    if (r.ok) desc = await r.text();
+                } catch(e){}
 
-        if (projects.length > 0) {
-            updateUIText(0);
-        }
+                return {
+                    id: index,
+                    title: customTitle, 
+                    subtitle: customSubtitle,
+                    image: `images/${name}.png?t=${nocache}`, 
+                    model: `models/${name}.glb`, 
+                    desc: desc,
+                    sceneObject: null,[cite: 1, 2]
+                    normalizedScale: 1[cite: 1, 2]
+                };
+            }));
+        } catch (e) { console.error(e); }[cite: 1, 2]
     }
 
-    function preloadAllModels() {
-        const loader = new GLTFLoader();
-        const dracoLoader = new DRACOLoader();
-        dracoLoader.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
-        loader.setDRACOLoader(dracoLoader);
+    async function preloadAllModels() {
+        const loader = new GLTFLoader(manager);[cite: 1, 2]
+        const dracoLoader = new DRACOLoader();[cite: 1, 2]
+        dracoLoader.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');[cite: 1, 2]
+        loader.setDRACOLoader(dracoLoader);[cite: 1, 2]
 
-        projects.forEach((project, idx) => {
-            loader.load(project.model, (gltf) => {
-                const model = gltf.scene;[cite: 1, 2]
-                model.traverse((node) => {[cite: 1, 2]
-                    if (node.isMesh) {[cite: 1, 2]
-                        node.castShadow = true;[cite: 1, 2]
-                        node.receiveShadow = true;[cite: 1, 2]
-                        node.layers.set(1);[cite: 1, 2]
-                        if (node.material) {[cite: 1, 2]
-                            node.material.envMap = studioEnvMap;[cite: 1, 2]
-                            node.material.envMapIntensity = 1.0;[cite: 1, 2]
-                            node.material.needsUpdate = true;[cite: 1, 2]
+        const total = projects.length;[cite: 1, 2]
+        let loaded = 0;[cite: 1, 2]
+        document.getElementById('loader-text').innerText = "LOADING MODELS...";[cite: 1, 2]
+
+        const promises = projects.map((project) => {
+            return new Promise((resolve) => {
+                loader.load(project.model, (gltf) => {
+                    const model = gltf.scene;[cite: 1, 2]
+                    
+                    model.traverse((node) => {[cite: 1, 2]
+                        if (node.isMesh) {[cite: 1, 2]
+                            node.castShadow = true;[cite: 1, 2]
+                            node.receiveShadow = true;[cite: 1, 2]
+                            node.layers.set(1);[cite: 1, 2]
+
+                            if (node.material) {[cite: 1, 2]
+                                node.material.envMap = studioEnvMap;[cite: 1, 2]
+                                node.material.envMapIntensity = 1.0;[cite: 1, 2]
+                                node.material.needsUpdate = true;[cite: 1, 2]
+                            }
                         }
-                    }
-                });
-                
-                const box = new THREE.Box3().setFromObject(model);[cite: 1, 2]
-                const center = new THREE.Vector3();[cite: 1, 2]
-                box.getCenter(center);[cite: 1, 2]
-                model.position.sub(center);[cite: 1, 2]
+                    });
+                    
+                    const box = new THREE.Box3().setFromObject(model);[cite: 1, 2]
+                    const center = new THREE.Vector3();[cite: 1, 2]
+                    box.getCenter(center);[cite: 1, 2]
+                    model.position.sub(center);[cite: 1, 2]
 
-                const size = new THREE.Vector3();[cite: 1, 2]
-                box.getSize(size);[cite: 1, 2]
-                const maxDim = Math.max(size.x, size.y, size.z);[cite: 1, 2]
-                project.normalizedScale = 2.5 / maxDim;
+                    const size = new THREE.Vector3();[cite: 1, 2]
+                    box.getSize(size);[cite: 1, 2]
+                    const maxDim = Math.max(size.x, size.y, size.z);[cite: 1, 2]
+                    project.normalizedScale = 3.0 / maxDim;
 
-                model.visible = (idx === 0);
-                model.position.y = MODEL_FIXED_Y;[cite: 1, 2]
-                centerModelGroup.add(model);[cite: 1, 2]
-                project.sceneObject = model;[cite: 1, 2]
-            }, undefined, () => {});
+                    model.visible = false;[cite: 1, 2]
+                    centerModelGroup.add(model);[cite: 1, 2]
+                    project.sceneObject = model;[cite: 1, 2]
+
+                    loaded++;[cite: 1, 2]
+                    const pFill = document.getElementById('progress-fill');
+                    if (pFill) pFill.style.width = Math.round((loaded / total) * 100) + "%";[cite: 1, 2]
+                    resolve();
+                }, undefined, () => resolve()); // 錯誤時強制 resolve 防止死鎖
+            });
         });
+
+        await Promise.all(promises);[cite: 1, 2]
+        renderer.compile(scene, camera);[cite: 1, 2]
     }
 
     function createCarousel() {
@@ -419,19 +453,25 @@
 
             const geometry = new THREE.PlaneGeometry(3.6, 2.4);[cite: 1, 2]
             const material = new THREE.MeshStandardMaterial({ 
-                color: 0xffffff, 
+                color: 0x999999,[cite: 1, 2]
                 side: THREE.DoubleSide,[cite: 1, 2]
-                transparent: true,     [cite: 1, 2]
-                opacity: 0.7,        [cite: 1, 2]
-                roughness: 0.4,      [cite: 1, 2]
+                transparent: true,      [cite: 1, 2]
+                opacity: 0.7,         [cite: 1, 2]
+                roughness: 0.4,       [cite: 1, 2]
                 metalness: 0.2[cite: 1, 2]
             });
 
-            loader.load(project.image, (texture) => {
-                texture.colorSpace = THREE.SRGBColorSpace;[cite: 1, 2]
-                material.map = texture;[cite: 1, 2]
-                material.needsUpdate = true;[cite: 1, 2]
-            });
+            loader.load(
+                project.image, 
+                (texture) => {
+                    texture.colorSpace = THREE.SRGBColorSpace;[cite: 1, 2]
+                    material.map = texture;[cite: 1, 2]
+                    material.color.setHex(0xffffff);[cite: 1, 2]
+                    material.needsUpdate = true;[cite: 1, 2]
+                },
+                undefined,[cite: 1, 2]
+                (err) => {}[cite: 1, 2]
+            );
 
             const mesh = new THREE.Mesh(geometry, material);[cite: 1, 2]
             mesh.position.set(x, 0, z);[cite: 1, 2]
@@ -441,12 +481,13 @@
 
             mesh.userData = { 
                 id: i,[cite: 1, 2]
+                project: project,[cite: 1, 2]
                 dataIndex: dataIndex,[cite: 1, 2]
                 originalAngle: angle,[cite: 1, 2]
-                targetLocalY: 0,[cite: 1, 2]
+                targetLocalY: 0, [cite: 1, 2]
                 currentLocalY: 0,[cite: 1, 2]
                 targetOpacity: 0.7,[cite: 1, 2]
-                baseOpacity: 0.7  [cite: 1, 2]
+                baseOpacity: 0.7    [cite: 1, 2]
             };
             carouselGroup.add(mesh);[cite: 1, 2]
             cardMeshes.push(mesh);[cite: 1, 2]
@@ -460,8 +501,12 @@
         projects.forEach((p, idx) => {[cite: 1, 2]
             if (p.sceneObject) {[cite: 1, 2]
                 p.sceneObject.visible = (idx === dataIndex);[cite: 1, 2]
-                if (idx === dataIndex && currentActiveIndex === -1) {
-                    centerModelTargetScale = p.normalizedScale * 1.5;
+                if (idx === dataIndex) {[cite: 1, 2]
+                    p.sceneObject.rotation.y = 0;[cite: 1, 2]
+                    p.sceneObject.position.y = MODEL_FIXED_Y;[cite: 1, 2]
+                    if (currentActiveIndex === -1) {[cite: 1, 2]
+                        centerModelTargetScale = p.normalizedScale * (isMobile ? 1.5 : 2.0);
+                    }
                 }
             }
         });
@@ -507,13 +552,13 @@
         
         const p = projects[dataIndex];[cite: 1, 2]
         document.getElementById('detail-panel-title').innerText = p.title;[cite: 1, 2]
-        document.getElementById('detail-desc').innerHTML = parseSimpleMarkdown(p.desc);
+        document.getElementById('detail-desc').innerHTML = typeof marked !== 'undefined' ? marked.parse(p.desc) : p.desc;
         
         const panel = document.getElementById('glass-panel');[cite: 1, 2]
         panel.classList.add('full-open');
         document.body.classList.add('panel-open');[cite: 1, 2]
 
-        centerModelTargetScale = p.normalizedScale * 2.0; 
+        centerModelTargetScale = p.normalizedScale * 2.2;
         activeCardUUID = cardMesh.uuid;[cite: 1, 2]
         cardMesh.userData.targetLocalY = 50;[cite: 1, 2]
         cardMesh.userData.targetOpacity = 0;[cite: 1, 2]
@@ -525,7 +570,7 @@
         document.body.classList.remove('panel-open');[cite: 1, 2]
         
         const p = projects[previewIndex];[cite: 1, 2]
-        if(p) centerModelTargetScale = p.normalizedScale * 1.5; 
+        if(p) centerModelTargetScale = p.normalizedScale * (isMobile ? 1.5 : 2.0); 
         
         if (activeCardUUID) {[cite: 1, 2]
             const mesh = cardMeshes.find(m => m.uuid === activeCardUUID);[cite: 1, 2]
@@ -535,6 +580,12 @@
             }
         }
         activeCardUUID = null;[cite: 1, 2]
+        
+        setTimeout(() => {[cite: 1, 2]
+            if(currentActiveIndex === -1) {[cite: 1, 2]
+                document.getElementById('detail-desc').innerHTML = '';[cite: 1, 2]
+            }
+        }, 500);[cite: 1, 2]
     }
 
     function onClick(event) {
@@ -564,7 +615,7 @@
         let isPlaying = false;[cite: 1, 2]
 
         audioBtn.addEventListener('click', (e) => {[cite: 1, 2]
-            e.stopPropagation();  [cite: 1, 2]
+            e.stopPropagation(); [cite: 1, 2]
             if (isPlaying) {[cite: 1, 2]
                 bgMusic.pause();[cite: 1, 2]
                 iconOn.style.display = 'none';[cite: 1, 2]
@@ -580,13 +631,13 @@
 
     function onWindowResize() {
         isMobile = window.innerWidth / window.innerHeight < 1;
-        CAMERA_BASE_Y = isMobile ? 28 : 22;
-        CAMERA_BASE_Z = isMobile ? 110 : 75;
+        CAMERA_BASE_Y = isMobile ? 30 : 22;
+        CAMERA_BASE_Z = isMobile ? 115 : 75;
         
         camera.fov = isMobile ? 48 : 35;
         camera.aspect = window.innerWidth / window.innerHeight;[cite: 1, 2]
         camera.position.set(0, CAMERA_BASE_Y, CAMERA_BASE_Z);
-        camera.lookAt(0, isMobile ? 3 : 0, 0);
+        camera.lookAt(0, isMobile ? 4 : 0, 0);
         camera.updateProjectionMatrix();[cite: 1, 2]
         renderer.setSize(window.innerWidth, window.innerHeight);[cite: 1, 2]
     }
