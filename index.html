@@ -219,7 +219,7 @@
     let scene, camera, renderer;
     let carouselGroup, cardMeshes = [], projects = [];
     let centerFloatingCard; 
-    let curvedBackdropScreen; // 後方天空巨型圓弧投影幕
+    let curvedBackdropScreen; 
     let previewIndex = 0;
     let targetRotation = 0, currentRotation = 0, currentActiveIndex = -1, activeCardUUID = null;
 
@@ -414,29 +414,30 @@
         }
     }
 
-    // 建立後方天空巨型圓弧半透明投影幕
+    // 建立後方天空巨幅圓弧投影幕（完全穿透迷霧、正視角包覆）
     function createCurvedBackdropScreen() {
-        const radius = 48;
+        const radius = 38;
         const height = isMobile ? 32 : 26;
-        const arcAngle = Math.PI * 0.72; // 130 度的半環弧面
+        const arcAngle = Math.PI * 0.9; // 162 度超寬廣角圓弧
 
-        // 圓柱弧面
+        // 開口面向相機
         const geometry = new THREE.CylinderGeometry(
-            radius, radius, height, 48, 1, true, Math.PI - arcAngle / 2, arcAngle
+            radius, radius, height, 64, 1, true, -arcAngle / 2, arcAngle
         );
 
         const material = new THREE.MeshBasicMaterial({
             color: 0xffffff,
-            side: THREE.BackSide, // 內側受光顯示
+            side: THREE.BackSide,
             transparent: true,
-            opacity: 0.38,        // 空靈半透明質感
-            map: projects[0] ? projects[0].texture : null,
-            depthWrite: false
+            opacity: 0.52,          // 柔和透光發光感
+            fog: false,             // 💡 關鍵：不受迷霧遮擋，保證 100% 清晰浮現在天空
+            depthWrite: false,
+            map: projects[0] ? projects[0].texture : null
         });
 
         curvedBackdropScreen = new THREE.Mesh(geometry, material);
-        curvedBackdropScreen.position.set(0, isMobile ? 12 : 9, -2);
-        curvedBackdropScreen.scale.x = -1; // 翻轉貼圖以正確正面投影
+        curvedBackdropScreen.position.set(0, isMobile ? 14 : 11, -4);
+        curvedBackdropScreen.rotation.y = Math.PI; // 旋轉使正面內壁正對鏡頭
         scene.add(curvedBackdropScreen);
     }
 
@@ -505,7 +506,6 @@
         previewIndex = dataIndex;
         updateUIText(dataIndex);
         if (projects[dataIndex]) {
-            // 同步切換中間主卡與後方巨幅弧形天幕
             if (centerFloatingCard) {
                 centerFloatingCard.material.map = projects[dataIndex].texture;
                 centerFloatingCard.material.needsUpdate = true;
@@ -720,11 +720,11 @@
             centerFloatingCard.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
         }
 
-        // 後方巨型弧幕輕微呼吸微動
+        // 天空巨幅圓弧投影幕輕微呼吸微動
         if (curvedBackdropScreen) {
-            const targetBackdropOpacity = currentActiveIndex === -1 ? 0.38 : 0.08;
+            const targetBackdropOpacity = currentActiveIndex === -1 ? 0.52 : 0.08;
             curvedBackdropScreen.material.opacity += (targetBackdropOpacity - curvedBackdropScreen.material.opacity) * 0.05;
-            curvedBackdropScreen.position.y = (isMobile ? 12 : 9) + Math.sin(time * 1.5) * 0.4;
+            curvedBackdropScreen.position.y = (isMobile ? 14 : 11) + Math.sin(time * 1.5) * 0.35;
         }
 
         if (currentActiveIndex === -1) {
