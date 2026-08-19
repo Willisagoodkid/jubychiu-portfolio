@@ -47,8 +47,13 @@
             border-radius: 50%;
             display: flex; justify-content: center; align-items: center;
             color: #ffffff; cursor: pointer; z-index: 200;
-            transition: transform 0.2s ease, background 0.3s ease;
+            transition: transform 0.2s ease, opacity 0.4s ease;
             pointer-events: auto;
+        }
+        /* 面板展開時徹底隱藏音量鍵，避免與關閉/面板重疊 */
+        body.panel-open #audio-toggle {
+            opacity: 0 !important;
+            pointer-events: none !important;
         }
         #audio-toggle:active { transform: scale(0.9); }
         #audio-toggle svg { width: 22px; height: 22px; fill: currentColor; pointer-events: none; }
@@ -88,7 +93,6 @@
             pointer-events: auto;
         }
 
-        /* 滾動條貼在全螢幕最右側邊緣，極簡透明 */
         #glass-panel::-webkit-scrollbar {
             width: 3px;
         }
@@ -215,11 +219,13 @@
     import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
     const RADIUS = 20;            
-    const CARD_COUNT = 24; // 6 個作品等比排列 24 張卡片        
+    const CARD_COUNT = 24; 
     const SPACE_COLOR = '#6c5b5e';
 
     let scene, camera, renderer;
     let carouselGroup, cardMeshes = [], projects = [];
+    let centerFloatingCard; // 中間飄浮主卡片
+    let previewIndex = 0;
     let targetRotation = 0, currentRotation = 0, currentActiveIndex = -1, activeCardUUID = null;
 
     let isMobile = window.innerWidth / window.innerHeight < 1;
@@ -228,6 +234,7 @@
 
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
+    const textureLoader = new THREE.TextureLoader();
 
     let lights = [], studioEnvMap;
     let ambientLight, topLight;
@@ -263,6 +270,7 @@
 
         setupLightsAndFloor();
         createCarousel();
+        createCenterFloatingCard();
 
         window.addEventListener('resize', onWindowResize);
         window.addEventListener('wheel', onWheel);
@@ -397,11 +405,16 @@
                 if(r.ok) desc = await r.text();
             } catch(e){}
 
+            const imgUrl = `images/${name}.png?t=${nocache}`;
+            const texture = textureLoader.load(imgUrl);
+            texture.colorSpace = THREE.SRGBColorSpace;
+
             return {
                 id: index,
                 title: customTitle, 
                 subtitle: customSubtitle,
-                image: `images/${name}.png?t=${nocache}`, 
+                image: imgUrl,
+                texture: texture,
                 desc: desc
             };
         }));
@@ -415,7 +428,6 @@
         carouselGroup = new THREE.Group();
         scene.add(carouselGroup);
         if (projects.length === 0) return;
-        const loader = new THREE.TextureLoader();
 
         for (let i = 0; i < CARD_COUNT; i++) {
             const dataIndex = i % projects.length;
@@ -427,25 +439,14 @@
 
             const geometry = new THREE.PlaneGeometry(3.6, 2.4); 
             const material = new THREE.MeshStandardMaterial({ 
-                color: 0x999999, 
+                color: 0xffffff, 
                 side: THREE.DoubleSide, 
                 transparent: true,     
                 opacity: 0.75,          
                 roughness: 0.4,        
-                metalness: 0.2
+                metalness: 0.2,
+                map: project.texture
             });
-
-            loader.load(
-                project.image, 
-                (texture) => {
-                    texture.colorSpace = THREE.SRGBColorSpace;
-                    material.map = texture;
-                    material.color.setHex(0xffffff); 
-                    material.needsUpdate = true;
-                },
-                undefined,
-                () => {}
-            );
 
             const mesh = new THREE.Mesh(geometry, material);
             mesh.position.set(x, 0, z);
@@ -463,6 +464,33 @@
             };
             carouselGroup.add(mesh);
             cardMeshes.push(mesh);
+        }
+    }
+
+    // 建立中間漂浮展示主卡
+    function createCenterFloatingCard() {
+        const geometry = new THREE.PlaneGeometry(6.6, 4.4);
+        const material = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.95,
+            roughness: 0.2,
+            metalness: 0.1,
+            map: projects[0] ? projects[0].texture : null
+        });
+
+        centerFloatingCard = new THREE.Mesh(geometry, material);
+        centerFloatingCard.position.set(0, 1.2, 0);
+        scene.add(centerFloatingCard);
+    }
+
+    function switchPreview(dataIndex) {
+        previewIndex = dataIndex;
+        updateUIText(dataIndex);
+        if (centerFloatingCard && projects[dataIndex]) {
+            centerFloatingCard.material.map = projects[dataIndex].texture;
+            centerFloatingCard.material.needsUpdate = true;
         }
     }
 
@@ -500,7 +528,7 @@
     function enterDetailMode(cardMesh) {
         const dataIndex = cardMesh.userData.dataIndex;
         currentActiveIndex = dataIndex;
-        updateUIText(dataIndex);
+        switchPreview(dataIndex);
         
         const p = projects[dataIndex];
         document.getElementById('detail-panel-title').innerText = p.title;
@@ -508,7 +536,7 @@
         
         const panel = document.getElementById('glass-panel');
         panel.classList.add('full-open');
-        panel.scrollTop = 0; // 重設滾動位置
+        panel.scrollTop = 0;
         document.body.classList.add('panel-open');
 
         activeCardUUID = cardMesh.uuid;
@@ -549,9 +577,10 @@
     }
 
     function setupUIEvents() {
+        // 點擊左上大標題直接重新整理
         document.getElementById('brand').addEventListener('click', (e) => {
             e.stopPropagation();
-            if (currentActiveIndex !== -1) exitDetailMode();
+            window.location.reload();
         });
 
         document.getElementById('close-btn').addEventListener('click', exitDetailMode);
@@ -645,6 +674,25 @@
         
         if (carouselGroup) {
             carouselGroup.rotation.y = currentRotation;
+
+            // 根據目前旋轉角度，自動更新正前方項目的預覽
+            if (projects.length > 0 && currentActiveIndex === -1) {
+                const normRot = ((-currentRotation % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+                const step = (Math.PI * 2) / CARD_COUNT;
+                const activeIndex = Math.round(normRot / step) % CARD_COUNT;
+                const targetProjectIndex = activeIndex % projects.length;
+                if (targetProjectIndex !== previewIndex) {
+                    switchPreview(targetProjectIndex);
+                }
+            }
+        }
+
+        // 中間主卡的浮動呼吸與動態微轉
+        if (centerFloatingCard) {
+            centerFloatingCard.position.y = 1.2 + Math.sin(time * 4) * 0.3;
+            centerFloatingCard.rotation.y = Math.sin(time * 2) * 0.1;
+            const targetScale = currentActiveIndex === -1 ? 1.0 : 0.001;
+            centerFloatingCard.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
         }
 
         if (currentActiveIndex === -1) {
@@ -692,7 +740,7 @@
                 if (hit.uuid !== activeCardUUID) {
                     hit.userData.targetOpacity = 1.0;
                 }
-                updateUIText(targetIdx);
+                switchPreview(targetIdx);
             }
         }
 
