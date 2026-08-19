@@ -9,9 +9,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&family=Inter:wght@900&display=swap" rel="stylesheet">
 
-    <!-- Markdown 解析庫 -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
     <style>
         body { 
             margin: 0; 
@@ -47,90 +44,180 @@
         #brand:hover { opacity: 0.7; }
 
         #audio-toggle {
-            position: absolute; top: 25px; right: 40px; width: 45px; height: 45px;
+            position: absolute;
+            top: 25px;
+            right: 40px;
+            width: 45px;
+            height: 45px;
             background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 50%;
-            display: flex; justify-content: center; align-items: center;
-            color: #ffffff; cursor: pointer; z-index: 20;
-            transition: all 0.3s ease; pointer-events: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #ffffff;
+            cursor: pointer;
+            z-index: 20;
+            transition: all 0.3s ease;
+            pointer-events: auto;
         }
-        #audio-toggle svg { width: 22px; height: 22px; fill: currentColor; }
+        #audio-toggle:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.05);
+        }
+        #audio-toggle svg {
+            width: 22px;
+            height: 22px;
+            fill: currentColor;
+        }
 
         #ui-layer {
-            position: absolute; bottom: 15%; left: 8%; width: 600px; 
-            text-align: left; pointer-events: none; color: #ffffff; z-index: 5;
+            position: absolute; 
+            bottom: 15%; 
+            left: 8%;    
+            width: 600px; 
+            text-align: left;
+            pointer-events: none; 
+            color: #ffffff; 
+            z-index: 5;
             transition: opacity 0.6s, transform 0.8s cubic-bezier(0.19, 1, 0.22, 1);
         }
-        body.panel-open #ui-layer { transform: translateY(-200px); opacity: 0; }
+
+        body.panel-open #ui-layer {
+            transform: translateY(-200px);
+            opacity: 0; 
+        }
+
+        #ui-title-container {
+            display: flex;
+            align-items: flex-end; 
+            margin-bottom: 10px;
+            padding-bottom: 15px; 
+        }
 
         #ui-title { 
-            font-size: 5.5rem; font-weight: 900; margin: 0; 
-            line-height: 0.85; text-transform: uppercase; word-break: break-word; 
+            font-size: 5.5rem; 
+            font-weight: 900; 
+            margin: 0; 
+            line-height: 0.85; 
+            text-transform: uppercase; 
+            font-family: 'Inter', sans-serif; 
+            word-break: break-word; 
         }
+
         #ui-subtitle {
-            font-size: 1.2rem; font-weight: 700; margin: 5px 0 0 0;
-            padding-left: 12px; border-left: 4px solid #ffffff; line-height: 1.2;
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin: 0;
+            padding-left: 12px;
+            border-left: 4px solid #ffffff; 
+            line-height: 1.2;
+            word-break: break-word;
         }
 
         #glass-panel {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 85vh; 
-            background: rgba(255, 255, 255, 0.05); 
-            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-            border-top: 1px solid rgba(255, 255, 255, 0.15); 
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 85vh; 
+            background: rgba(255, 255, 255, 0.01); 
+            backdrop-filter: blur(3px); 
+            -webkit-backdrop-filter: blur(3px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.02); 
             border-radius: 30px 30px 0 0; 
             transform: translateY(100%); 
-            transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); 
-            z-index: 100; display: flex; flex-direction: column; align-items: center;
-            pointer-events: none;
-        }
-        #glass-panel.full-open { 
-            transform: translateY(0%); 
-            background: rgba(42, 32, 34, 0.9); 
-            pointer-events: auto;
+            transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); 
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-sizing: border-box;
+            cursor: pointer; 
         }
 
-        .panel-handle { 
-            width: 60px; height: 5px; background: rgba(255,255,255,0.4); 
-            border-radius: 5px; margin-top: 15px; margin-bottom: 20px; 
-            flex-shrink: 0; cursor: pointer; 
+        #glass-panel.half-open { transform: translateY(60%); }
+        #glass-panel.full-open { 
+            transform: translateY(0%);
+            background: rgba(255, 255, 255, 0.2); 
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            cursor: default; 
         }
-        #close-btn { 
-            position: absolute; top: 20px; right: 25px; width: 30px; height: 30px; 
-            color: white; font-size: 24px; display: none; z-index: 110; cursor: pointer; 
+
+        .panel-handle {
+            width: 60px;
+            height: 5px;
+            background: rgba(255,255,255,0.4); 
+            border-radius: 5px;
+            margin-top: 15px;
+            margin-bottom: 30px;
+            flex-shrink: 0;
+            cursor: pointer; 
         }
-        body.panel-open #close-btn { display: block; }
 
         .panel-content {
-            width: 100%; max-width: 1200px; padding: 0 40px 80px 40px; box-sizing: border-box;
-            display: flex; flex-direction: column; gap: 30px; opacity: 0; 
-            transition: opacity 0.5s; height: 100%; overflow-y: auto;
-            -webkit-overflow-scrolling: touch; touch-action: pan-y;
+            width: 100%; 
+            max-width: 100%; 
+            padding: 0 40px; 
+            box-sizing: border-box;
+            display: flex;
+            gap: 50px;
+            opacity: 0;
+            transition: opacity 0.8s; 
+            height: 100%;
+            padding-bottom: 50px;
         }
+
+        #glass-panel.half-open .panel-content,
         #glass-panel.full-open .panel-content { opacity: 1; }
 
-        .panel-left { width: 100%; }
-        .panel-title-text { font-size: 3rem; font-weight: 900; color: #ffffff; line-height: 1.1; margin: 0; }
-
-        .panel-right { width: 100%; }
-        .detail-text { width: 100%; color: #eeeeee; font-size: 1.05rem; line-height: 1.8; }
-        .detail-text img { max-width: 100%; height: auto; border-radius: 8px; margin: 20px 0; display: block; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-        .detail-text h1, .detail-text h2, .detail-text h3 { color: #ffffff; margin-top: 30px; margin-bottom: 15px; font-weight: 900; }
-        .detail-text p { margin-bottom: 20px; }
-
-        @media (min-width: 769px) {
-            .panel-content { flex-direction: row; gap: 60px; }
-            .panel-left { flex: 1; padding-top: 40px; }
-            .panel-right { flex: 2; padding-top: 40px; }
+        .panel-left { 
+            flex: 1; 
+            padding-top: 200px; 
         }
-        @media (max-width: 768px) {
-            #brand { top: 20px; left: 20px; font-size: 1rem; }
-            #audio-toggle { top: 15px; right: 20px; width: 40px; height: 40px; }
-            #ui-layer { left: 20px; bottom: 10%; width: calc(100% - 40px); }
-            #ui-title { font-size: 3.2rem; }
-            .panel-content { padding: 0 20px 60px 20px; }
-            .panel-title-text { font-size: 2.2rem; }
+        .panel-title-text { 
+            font-size: 3.5rem; 
+            font-weight: 900; 
+            color: #ffffff; 
+            line-height: 1.1; 
+            word-break: break-word; 
+        }
+
+        .panel-right { 
+            flex: 3; 
+            overflow-y: auto; 
+            padding-right: 25px; 
+            padding-bottom: 100px; 
+        }
+
+        .panel-right::-webkit-scrollbar { width: 4px; }
+        .panel-right::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.4); border-radius: 4px; }
+        .panel-right::-webkit-scrollbar-track { background: transparent; }
+
+        .detail-text { width: 100%; }
+        .detail-text img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px; 
+            margin-bottom: 25px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08); 
+            display: block;
+        }
+        .detail-text h2 {
+            font-size: 2rem;
+            font-weight: 900;
+            margin: 0 0 15px 0;
+            color: #ffffff;
+        }
+        .detail-text p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #eeeeee;
+            margin-bottom: 25px;
         }
     </style>
     
@@ -145,7 +232,9 @@
 </head>
 <body>
 
-    <audio id="bg-music" loop><source src="music.mp3" type="audio/mpeg"></audio>
+    <audio id="bg-music" loop>
+        <source src="music.mp3" type="audio/mpeg">
+    </audio>
 
     <div id="loader">
         <div id="loader-text">INITIALIZING...</div>
@@ -155,18 +244,23 @@
     <div id="brand">Juby chiuuuuu studio &lt;3 .</div>
 
     <div id="audio-toggle">
-        <svg id="icon-sound-off" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
-        <svg id="icon-sound-on" viewBox="0 0 24 24" style="display:none;"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77z"/></svg>
+        <svg id="icon-sound-off" viewBox="0 0 24 24">
+            <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+        </svg>
+        <svg id="icon-sound-on" viewBox="0 0 24 24" style="display:none;">
+            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+        </svg>
     </div>
 
     <div id="ui-layer">
-        <h1 id="ui-title"></h1>
+        <div id="ui-title-container">
+            <h1 id="ui-title"></h1>
+        </div>
         <div id="ui-subtitle"></div>
     </div>
 
     <div id="glass-panel">
         <div class="panel-handle"></div>
-        <div id="close-btn">✕</div>
         <div class="panel-content">
             <div class="panel-left">
                 <div class="panel-title-text" id="detail-panel-title"></div>
@@ -189,20 +283,31 @@
     const SPACE_COLOR = '#6c5b5e';[cite: 1, 2]
 
     let scene, camera, renderer;
-    let carouselGroup, centerModelGroup, cardMeshes = [], projects = [];
-    let targetRotation = 0, currentRotation = 0, currentActiveIndex = -1, activeCardUUID = null, previewIndex = 0;
+    let carouselGroup;     
+    let centerModelGroup;  
+    let cardMeshes = [];   
+    let projects = [];     
+    
+    let targetRotation = 0;
+    let currentRotation = 0;
+    let currentActiveIndex = -1; 
+    let activeCardUUID = null;   
+    let previewIndex = 0; 
+
     let centerModelTargetScale = 2.0;[cite: 1, 2]
 
-    let isMobile = window.innerWidth / window.innerHeight < 1;
-    let CAMERA_BASE_Y = isMobile ? 30 : 22;
-    let CAMERA_BASE_Z = isMobile ? 115 : 75; // 手機版拉遠 Z 軸，完整容納圓環
+    const CAMERA_BASE_Y = 22;
+    const CAMERA_BASE_Z = 75;
 
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
     const manager = new THREE.LoadingManager();
 
-    let lights = [], studioEnvMap;
-    let isDragging = false, touchStartX = 0, touchStartY = 0, previousTouchX = 0, hasMoved = false;
+    let lights = [];
+    let studioEnvMap;
+
+    let isDragging = false;
+    let previousTouchX = 0;
 
     init();
 
@@ -211,20 +316,20 @@
 
         scene = new THREE.Scene();
         scene.background = new THREE.Color(SPACE_COLOR);[cite: 1, 2]
-        scene.fog = new THREE.Fog(SPACE_COLOR, 40, 150); 
+        scene.fog = new THREE.Fog(SPACE_COLOR, 40, 140);[cite: 1, 2] 
 
-        camera = new THREE.PerspectiveCamera(isMobile ? 48 : 35, window.innerWidth / window.innerHeight, 0.1, 400);
-        camera.position.set(0, CAMERA_BASE_Y, CAMERA_BASE_Z); 
-        camera.lookAt(0, isMobile ? 4 : 0, 0);
+        camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 300);[cite: 1, 2]
+        camera.position.set(0, CAMERA_BASE_Y, CAMERA_BASE_Z);[cite: 1, 2] 
+        camera.lookAt(0, 0, 0);[cite: 1, 2]
         
         camera.layers.enable(0);[cite: 1, 2]
         camera.layers.enable(1);[cite: 1, 2]
 
-        renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer = new THREE.WebGLRenderer({ antialias: true });[cite: 1, 2]
+        renderer.setSize(window.innerWidth, window.innerHeight);[cite: 1, 2]
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));[cite: 1, 2]
         renderer.shadowMap.enabled = true;[cite: 1, 2]
-        renderer.shadowMap.type = THREE.VSMShadowMap;[cite: 1, 2]
+        renderer.shadowMap.type = THREE.VSMShadowMap;[cite: 1, 2] 
         document.body.appendChild(renderer.domElement);[cite: 1, 2]
 
         const pmremGenerator = new THREE.PMREMGenerator(renderer);[cite: 1, 2]
@@ -234,7 +339,7 @@
 
         if (projects.length > 0) {[cite: 1, 2]
             await preloadAllModels();[cite: 1, 2]
-            switchPreviewModel(0);[cite: 1, 2]
+            switchPreviewModel(0);[cite: 1, 2] 
         }
 
         createCarousel();[cite: 1, 2]
@@ -244,39 +349,76 @@
         window.addEventListener('mousemove', onMouseMove);[cite: 1, 2]
         window.addEventListener('click', onClick);[cite: 1, 2]
 
-        // 嚴謹分流：點擊 vs 滑動
+        window.addEventListener('mousedown', (e) => { isDragging = true; });[cite: 1, 2]
+        window.addEventListener('mouseup', () => { isDragging = false; });[cite: 1, 2]
+        
         window.addEventListener('touchstart', (e) => { 
-            if (currentActiveIndex !== -1) return;
             isDragging = true; 
-            hasMoved = false;
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-            previousTouchX = touchStartX; 
-        }, { passive: true });
+            previousTouchX = e.touches[0].clientX; 
+        }, { passive: true });[cite: 1, 2]
         
         window.addEventListener('touchmove', (e) => {
             if (!isDragging || currentActiveIndex !== -1) return;
             const deltaX = e.touches[0].clientX - previousTouchX;
-            if (Math.abs(e.touches[0].clientX - touchStartX) > 8) {
-                hasMoved = true;
-            }
-            targetRotation += deltaX * 0.007;
+            targetRotation += deltaX * 0.006;
             previousTouchX = e.touches[0].clientX;
-        }, { passive: true });
+        }, { passive: true });[cite: 1, 2]
         
-        window.addEventListener('touchend', (e) => { 
-            if (currentActiveIndex !== -1) return;
-            isDragging = false; 
-            // 若手指移動距離極小，判定為點擊
-            if (!hasMoved) {
-                const touch = e.changedTouches[0];
-                handleRaycast(touch.clientX, touch.clientY);
+        window.addEventListener('touchend', () => { isDragging = false; });[cite: 1, 2]
+
+        document.getElementById('brand').addEventListener('click', (e) => {[cite: 1, 2]
+            e.stopPropagation();[cite: 1, 2]
+            if (currentActiveIndex !== -1) {
+                exitDetailMode();[cite: 1, 2]
             }
         });
 
-        setupUIEvents();
-        document.getElementById('loader').style.opacity = 0;[cite: 1, 2]
-        setTimeout(() => document.getElementById('loader').remove(), 500);
+        const audioBtn = document.getElementById('audio-toggle');[cite: 1, 2]
+        const bgMusic = document.getElementById('bg-music');[cite: 1, 2]
+        const iconOn = document.getElementById('icon-sound-on');[cite: 1, 2]
+        const iconOff = document.getElementById('icon-sound-off');[cite: 1, 2]
+        let isPlaying = false;[cite: 1, 2]
+
+        audioBtn.addEventListener('click', (e) => {[cite: 1, 2]
+            e.stopPropagation();[cite: 1, 2]
+            if (isPlaying) {[cite: 1, 2]
+                bgMusic.pause();[cite: 1, 2]
+                iconOn.style.display = 'none';[cite: 1, 2]
+                iconOff.style.display = 'block';[cite: 1, 2]
+            } else {
+                bgMusic.play();[cite: 1, 2]
+                iconOn.style.display = 'block';[cite: 1, 2]
+                iconOff.style.display = 'none';[cite: 1, 2]
+            }
+            isPlaying = !isPlaying;[cite: 1, 2]
+        });
+
+        const glassPanel = document.getElementById('glass-panel');[cite: 1, 2]
+        glassPanel.addEventListener('click', (e) => {[cite: 1, 2]
+            e.stopPropagation();[cite: 1, 2]
+            if (glassPanel.classList.contains('half-open')) {[cite: 1, 2]
+                glassPanel.classList.remove('half-open');[cite: 1, 2]
+                glassPanel.classList.add('full-open');[cite: 1, 2]
+            }
+        });
+
+        document.querySelector('.panel-handle').addEventListener('click', (e) => {[cite: 1, 2]
+            e.stopPropagation();[cite: 1, 2]
+            if (glassPanel.classList.contains('full-open')) {[cite: 1, 2]
+                glassPanel.classList.remove('full-open');[cite: 1, 2]
+                glassPanel.classList.add('half-open');[cite: 1, 2]
+            } else {
+                glassPanel.classList.remove('half-open');[cite: 1, 2]
+                glassPanel.classList.add('full-open');[cite: 1, 2]
+            }
+        });
+
+        // 💡 修正筆誤：正確移除 loader 節點
+        const loaderDiv = document.getElementById('loader');[cite: 1, 2]
+        if (loaderDiv) {
+            loaderDiv.style.opacity = '0';[cite: 1, 2]
+            setTimeout(() => loaderDiv.remove(), 500);
+        }
 
         animate();[cite: 1, 2]
     }
@@ -302,27 +444,27 @@
         topLight.layers.enable(1);[cite: 1, 2]
         scene.add(topLight);[cite: 1, 2]
 
-        const colors = [0xffd54f, 0xc084fc, 0xff8a65, 0xf472b6];[cite: 1, 2]
-        const intensities = [2500, 2500, 1800, 1800];[cite: 1, 2]
+        const colors = [0xffd54f, 0xc084fc, 0xff8a65, 0xf472b6];[cite: 1, 2] 
+        const intensities = [2500, 2500, 1800, 1800];[cite: 1, 2] 
         
         for(let i = 0; i < 4; i++) {
             const light = new THREE.PointLight(colors[i], intensities[i], 200);[cite: 1, 2]
-            light.layers.set(0);[cite: 1, 2]
+            light.layers.set(0);[cite: 1, 2] 
             scene.add(light);[cite: 1, 2]
             lights.push(light);[cite: 1, 2]
         }
 
-        const floorGeo = new THREE.PlaneGeometry(1000, 1000);[cite: 1, 2]
+        const floorGeo = new THREE.PlaneGeometry(1000, 1000);[cite: 1, 2] 
         const floorMat = new THREE.MeshStandardMaterial({ 
-            color: new THREE.Color(SPACE_COLOR),[cite: 1, 2]
-            roughness: 1.0, [cite: 1, 2]
+            color: new THREE.Color(SPACE_COLOR),[cite: 1, 2] 
+            roughness: 1.0,[cite: 1, 2] 
             metalness: 0.0[cite: 1, 2]
         });
         const floor = new THREE.Mesh(floorGeo, floorMat);[cite: 1, 2]
-        floor.rotation.x = -Math.PI / 2;[cite: 1, 2]
-        floor.position.y = -4.0;[cite: 1, 2]
-        floor.receiveShadow = true;[cite: 1, 2]
-        floor.layers.set(0);[cite: 1, 2]
+        floor.rotation.x = -Math.PI / 2;[cite: 1, 2] 
+        floor.position.y = -4.0;[cite: 1, 2] 
+        floor.receiveShadow = true;[cite: 1, 2] 
+        floor.layers.set(0);[cite: 1, 2] 
         scene.add(floor);[cite: 1, 2]
 
         centerModelGroup = new THREE.Group();[cite: 1, 2]
@@ -334,32 +476,28 @@
         status.innerText = "FETCHING DATA...";[cite: 1, 2]
         try {
             const nocache = new Date().getTime();[cite: 1, 2]
-            const items = ['a', 'b', 'c', 'd', 'e']; 
+            const items = ['a', 'b', 'c', 'd', 'e'];[cite: 1, 2] 
 
             projects = await Promise.all(items.map(async (name, index) => {
                 let desc = "";
-                let customTitle = name.toUpperCase();[cite: 1, 2]
+                let customTitle = name.toUpperCase();[cite: 1, 2] 
                 
-                if (name === 'a') customTitle = "JUBY 2014"; 
-                if (name === 'b') customTitle = "JUBY FALL"; 
-                if (name === 'c') customTitle = "JUBY DANCE"; 
-                if (name === 'd') customTitle = "JUBY STUDIO"; 
+                if (name === 'a') customTitle = "JUBY 2014";[cite: 1, 2] 
 
                 try {
-                    let r = await fetch(`txts/${name}.md?t=${nocache}`);
-                    if (!r.ok) r = await fetch(`txts/${name}.txt?t=${nocache}`);
-                    if (r.ok) desc = await r.text();
+                    const r = await fetch(`txts/${name}.txt?t=${nocache}`);
+                    if(r.ok) desc = await r.text();
                 } catch(e){}
 
                 return {
                     id: index,
-                    letter: name.toUpperCase(),[cite: 1, 2]
+                    letter: name.toUpperCase(),[cite: 1, 2] 
                     title: customTitle, 
                     image: `images/${name}.png?t=${nocache}`, 
-                    model: `models/${name}.glb`, 
+                    model: `models/${name}.glb`,
                     desc: desc,
                     sceneObject: null,[cite: 1, 2]
-                    normalizedScale: 1[cite: 1, 2]
+                    normalizedScale: 1[cite: 1, 2] 
                 };
             }));
         } catch (e) { console.error(e); }[cite: 1, 2]
@@ -380,11 +518,11 @@
                 loader.load(project.model, (gltf) => {
                     const model = gltf.scene;[cite: 1, 2]
                     
-                    model.traverse((node) => {[cite: 1, 2]
-                        if (node.isMesh) {[cite: 1, 2]
-                            node.castShadow = true;[cite: 1, 2]
-                            node.receiveShadow = true;[cite: 1, 2]
-                            node.layers.set(1);[cite: 1, 2]
+                    model.traverse((node) => {[cite: 1, 2] 
+                        if (node.isMesh) {[cite: 1, 2] 
+                            node.castShadow = true;[cite: 1, 2] 
+                            node.receiveShadow = true;[cite: 1, 2] 
+                            node.layers.set(1);[cite: 1, 2] 
 
                             if (node.material) {[cite: 1, 2]
                                 node.material.envMap = studioEnvMap;[cite: 1, 2]
@@ -397,21 +535,21 @@
                     const box = new THREE.Box3().setFromObject(model);[cite: 1, 2]
                     const center = new THREE.Vector3();[cite: 1, 2]
                     box.getCenter(center);[cite: 1, 2]
-                    model.position.sub(center);[cite: 1, 2]
+                    model.position.sub(center);[cite: 1, 2] 
 
                     const size = new THREE.Vector3();[cite: 1, 2]
                     box.getSize(size);[cite: 1, 2]
                     const maxDim = Math.max(size.x, size.y, size.z);[cite: 1, 2]
                     project.normalizedScale = 4.0 / maxDim;[cite: 1, 2]
 
-                    model.visible = false;[cite: 1, 2]
+                    model.visible = false;[cite: 1, 2] 
                     centerModelGroup.add(model);[cite: 1, 2]
                     project.sceneObject = model;[cite: 1, 2]
 
                     loaded++;[cite: 1, 2]
                     document.getElementById('progress-fill').style.width = Math.round((loaded / total) * 100) + "%";[cite: 1, 2]
-                    resolve();[cite: 1, 2]
-                }, undefined, () => resolve());[cite: 1, 2]
+                    resolve();
+                }, undefined, () => resolve());
             });
         });
 
@@ -433,13 +571,14 @@
             const x = Math.sin(angle) * RADIUS;[cite: 1, 2]
             const z = Math.cos(angle) * RADIUS;[cite: 1, 2]
 
-            const geometry = new THREE.PlaneGeometry(3.6, 2.4);[cite: 1, 2]
+            const geometry = new THREE.PlaneGeometry(3.6, 2.4);[cite: 1, 2] 
+            
             const material = new THREE.MeshStandardMaterial({ 
-                color: 0x999999,[cite: 1, 2]
-                side: THREE.DoubleSide,[cite: 1, 2]
-                transparent: true,      [cite: 1, 2]
-                opacity: 0.7,          [cite: 1, 2]
-                roughness: 0.4,        [cite: 1, 2]
+                color: 0x999999,[cite: 1, 2] 
+                side: THREE.DoubleSide,[cite: 1, 2] 
+                transparent: true,[cite: 1, 2]     
+                opacity: 0.7,[cite: 1, 2]          
+                roughness: 0.4,[cite: 1, 2]        
                 metalness: 0.2[cite: 1, 2]
             });
 
@@ -448,7 +587,7 @@
                 (texture) => {
                     texture.colorSpace = THREE.SRGBColorSpace;[cite: 1, 2]
                     material.map = texture;[cite: 1, 2]
-                    material.color.setHex(0xffffff);[cite: 1, 2]
+                    material.color.setHex(0xffffff);[cite: 1, 2] 
                     material.needsUpdate = true;[cite: 1, 2]
                 },
                 undefined,[cite: 1, 2]
@@ -458,18 +597,18 @@
             const mesh = new THREE.Mesh(geometry, material);[cite: 1, 2]
             mesh.position.set(x, 0, z);[cite: 1, 2]
             mesh.lookAt(0, 0, 0);[cite: 1, 2]
-            mesh.rotateY(Math.PI / 2);[cite: 1, 2]
-            mesh.layers.set(0);[cite: 1, 2]
+            mesh.rotateY(Math.PI / 2);[cite: 1, 2] 
+            mesh.layers.set(0);[cite: 1, 2] 
 
             mesh.userData = { 
-                id: i,[cite: 1, 2]
-                project: project,[cite: 1, 2]
-                dataIndex: dataIndex,[cite: 1, 2]
+                id: i,[cite: 1, 2] 
+                project: project,[cite: 1, 2] 
+                dataIndex: dataIndex,[cite: 1, 2] 
                 originalAngle: angle,[cite: 1, 2]
-                targetLocalY: 0,  [cite: 1, 2]
-                currentLocalY: 0, [cite: 1, 2]
-                targetOpacity: 0.7, [cite: 1, 2]
-                baseOpacity: 0.7     [cite: 1, 2]
+                targetLocalY: 0,[cite: 1, 2]  
+                currentLocalY: 0,[cite: 1, 2] 
+                targetOpacity: 0.7,[cite: 1, 2] 
+                baseOpacity: 0.7[cite: 1, 2]    
             };
             carouselGroup.add(mesh);[cite: 1, 2]
             cardMeshes.push(mesh);[cite: 1, 2]
@@ -487,7 +626,7 @@
                     p.sceneObject.rotation.y = 0;[cite: 1, 2]
                     p.sceneObject.position.y = MODEL_FIXED_Y;[cite: 1, 2]
                     if (currentActiveIndex === -1) {[cite: 1, 2]
-                        centerModelTargetScale = p.normalizedScale * (isMobile ? 1.5 : 2.0);
+                        centerModelTargetScale = p.normalizedScale * 2.0;[cite: 1, 2]
                     }
                 }
             }
@@ -498,33 +637,7 @@
         const p = projects[dataIndex];[cite: 1, 2]
         if(!p) return;[cite: 1, 2]
         document.getElementById('ui-title').innerText = p.letter || "";[cite: 1, 2]
-        document.getElementById('ui-subtitle').innerText = p.title || "";[cite: 1, 2]
-    }
-
-    function handleRaycast(clientX, clientY) {
-        mouse.x = (clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(clientY / window.innerHeight) * 2 + 1;
-
-        raycaster.setFromCamera(mouse, camera);
-        const intersects = raycaster.intersectObjects(cardMeshes);
-
-        if (intersects.length > 0) {
-            const hit = intersects[0].object;
-            const dataIndex = hit.userData.dataIndex;
-            if (currentActiveIndex === dataIndex) return;
-
-            enterDetailMode(hit);
-            
-            let targetAngle = -hit.userData.originalAngle;
-            const currentRot = currentRotation;
-            const twoPi = Math.PI * 2;
-            const cycles = Math.floor(currentRot / twoPi);
-            targetAngle += cycles * twoPi;
-            const diff = targetAngle - currentRot;
-            if (diff > Math.PI) targetAngle -= twoPi;
-            else if (diff < -Math.PI) targetAngle += twoPi;
-            targetRotation = targetAngle;
-        }
+        document.getElementById('ui-subtitle').innerText = p.title || "";[cite: 1, 2] 
     }
 
     function enterDetailMode(cardMesh) {
@@ -533,32 +646,34 @@
         switchPreviewModel(dataIndex);[cite: 1, 2]
         
         const p = projects[dataIndex];[cite: 1, 2]
-        document.getElementById('detail-panel-title').innerText = p.title;[cite: 1, 2]
         
-        document.getElementById('detail-desc').innerHTML = typeof marked !== 'undefined' ? marked.parse(p.desc) : p.desc;
+        document.getElementById('detail-panel-title').innerText = p.title;[cite: 1, 2]
+        document.getElementById('detail-desc').innerHTML = p.desc;[cite: 1, 2]
         
         const panel = document.getElementById('glass-panel');[cite: 1, 2]
-        panel.classList.add('full-open');
+        panel.classList.remove('full-open');[cite: 1, 2]
+        panel.classList.add('half-open');[cite: 1, 2]
         document.body.classList.add('panel-open');[cite: 1, 2]
 
-        centerModelTargetScale = p.normalizedScale * 2.5;[cite: 1, 2]
+        centerModelTargetScale = p.normalizedScale * 2.5;[cite: 1, 2] 
+        
         activeCardUUID = cardMesh.uuid;[cite: 1, 2]
-        cardMesh.userData.targetLocalY = 50;[cite: 1, 2]
-        cardMesh.userData.targetOpacity = 0;[cite: 1, 2]
+        cardMesh.userData.targetLocalY = 50;[cite: 1, 2] 
+        cardMesh.userData.targetOpacity = 0;[cite: 1, 2] 
     }
 
     function exitDetailMode() {
         currentActiveIndex = -1;[cite: 1, 2]
-        document.getElementById('glass-panel').classList.remove('full-open');
+        document.getElementById('glass-panel').classList.remove('half-open', 'full-open');[cite: 1, 2]
         document.body.classList.remove('panel-open');[cite: 1, 2]
         
         const p = projects[previewIndex];[cite: 1, 2]
-        if(p) centerModelTargetScale = p.normalizedScale * (isMobile ? 1.5 : 2.0); 
+        if(p) centerModelTargetScale = p.normalizedScale * 2.0;[cite: 1, 2] 
         
         if (activeCardUUID) {[cite: 1, 2]
             const mesh = cardMeshes.find(m => m.uuid === activeCardUUID);[cite: 1, 2]
             if (mesh) {[cite: 1, 2]
-                mesh.userData.targetLocalY = 0;[cite: 1, 2]
+                mesh.userData.targetLocalY = 0;[cite: 1, 2] 
                 mesh.userData.targetOpacity = mesh.userData.baseOpacity;[cite: 1, 2]
             }
         }
@@ -572,72 +687,48 @@
     }
 
     function onClick(event) {
-        if (currentActiveIndex !== -1) {
-            const path = event.composedPath ? event.composedPath() : [];
-            const isContent = path.some(el => el.classList && el.classList.contains('panel-content'));
-            if (!isContent && event.target.id !== 'audio-toggle') exitDetailMode();
-            return;
+        raycaster.setFromCamera(mouse, camera);[cite: 1, 2]
+        const intersects = raycaster.intersectObjects(cardMeshes);[cite: 1, 2]
+
+        if (intersects.length > 0) {[cite: 1, 2]
+            const hit = intersects[0].object;[cite: 1, 2]
+            const dataIndex = hit.userData.dataIndex;[cite: 1, 2]
+            
+            if (currentActiveIndex === dataIndex) return;[cite: 1, 2]
+
+            enterDetailMode(hit);[cite: 1, 2]
+            
+            let targetAngle = -hit.userData.originalAngle;[cite: 1, 2]
+            const currentRot = currentRotation;[cite: 1, 2]
+            const twoPi = Math.PI * 2;[cite: 1, 2]
+            const cycles = Math.floor(currentRot / twoPi);[cite: 1, 2]
+            targetAngle += cycles * twoPi;[cite: 1, 2]
+            const diff = targetAngle - currentRot;[cite: 1, 2]
+            if (diff > Math.PI) targetAngle -= twoPi;[cite: 1, 2]
+            else if (diff < -Math.PI) targetAngle += twoPi;[cite: 1, 2]
+            targetRotation = targetAngle;[cite: 1, 2]
+
+        } else {[cite: 1, 2]
+            exitDetailMode();[cite: 1, 2]
         }
-
-        handleRaycast(event.clientX, event.clientY);
-    }
-
-    function setupUIEvents() {
-        document.getElementById('brand').addEventListener('click', (e) => {[cite: 1, 2]
-            e.stopPropagation();[cite: 1, 2]
-            if (currentActiveIndex !== -1) exitDetailMode();[cite: 1, 2]
-        });
-
-        document.getElementById('close-btn').addEventListener('click', exitDetailMode);
-        document.querySelector('.panel-handle').addEventListener('click', exitDetailMode);
-
-        const audioBtn = document.getElementById('audio-toggle');[cite: 1, 2]
-        const bgMusic = document.getElementById('bg-music');[cite: 1, 2]
-        const iconOn = document.getElementById('icon-sound-on');[cite: 1, 2]
-        const iconOff = document.getElementById('icon-sound-off');[cite: 1, 2]
-        let isPlaying = false;[cite: 1, 2]
-
-        audioBtn.addEventListener('click', (e) => {[cite: 1, 2]
-            e.stopPropagation(); [cite: 1, 2]
-            if (isPlaying) {[cite: 1, 2]
-                bgMusic.pause();[cite: 1, 2]
-                iconOn.style.display = 'none';[cite: 1, 2]
-                iconOff.style.display = 'block';[cite: 1, 2]
-            } else {
-                bgMusic.play();[cite: 1, 2]
-                iconOn.style.display = 'block';[cite: 1, 2]
-                iconOff.style.display = 'none';[cite: 1, 2]
-            }
-            isPlaying = !isPlaying;[cite: 1, 2]
-        });
     }
 
     function onWindowResize() {
-        isMobile = window.innerWidth / window.innerHeight < 1;
-        CAMERA_BASE_Y = isMobile ? 30 : 22;
-        CAMERA_BASE_Z = isMobile ? 115 : 75;
-        
-        camera.fov = isMobile ? 48 : 35;
         camera.aspect = window.innerWidth / window.innerHeight;[cite: 1, 2]
-        camera.position.set(0, CAMERA_BASE_Y, CAMERA_BASE_Z);
-        camera.lookAt(0, isMobile ? 4 : 0, 0);
         camera.updateProjectionMatrix();[cite: 1, 2]
         renderer.setSize(window.innerWidth, window.innerHeight);[cite: 1, 2]
     }
 
     function onWheel(event) {
-        if (currentActiveIndex === -1) {
-            targetRotation += event.deltaY * 0.0008;[cite: 1, 2]
-        }
+        targetRotation += event.deltaY * 0.0008;[cite: 1, 2]
     }
 
     function onMouseMove(event) {
-        if (isMobile) return; // 手機版完全凍結視角位移，防止偏斜
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;[cite: 1, 2]
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;[cite: 1, 2]
         
-        if (!isDragging && currentActiveIndex === -1) {[cite: 1, 2]
-            const targetCamX = -mouse.x * 4; [cite: 1, 2]
+        if (!isDragging) {[cite: 1, 2]
+            const targetCamX = -mouse.x * 4;[cite: 1, 2] 
             const targetCamY = mouse.y * 4 + CAMERA_BASE_Y;[cite: 1, 2]
             camera.position.x += (targetCamX - camera.position.x) * 0.05;[cite: 1, 2]
             camera.position.y += (targetCamY - camera.position.y) * 0.05;[cite: 1, 2]
@@ -648,7 +739,7 @@
     function animate() {
         requestAnimationFrame(animate);[cite: 1, 2]
 
-        const time = Date.now() * 0.0002; [cite: 1, 2]
+        const time = Date.now() * 0.0002;[cite: 1, 2] 
         if (lights.length === 4) {[cite: 1, 2]
             lights[0].position.x = Math.sin(time) * 25;[cite: 1, 2]
             lights[0].position.z = Math.cos(time) * 25;[cite: 1, 2]
@@ -667,7 +758,12 @@
             lights[3].position.y = 12 - Math.cos(time * 2) * 2;[cite: 1, 2]
         }
 
-        currentRotation += (targetRotation - currentRotation) * 0.06;[cite: 1, 2]
+        if (isDragging) {[cite: 1, 2]
+            currentRotation += (targetRotation - currentRotation) * 0.2;[cite: 1, 2]
+        } else {
+            currentRotation += (targetRotation - currentRotation) * 0.06;[cite: 1, 2]
+        }
+        
         if (carouselGroup) {[cite: 1, 2]
             carouselGroup.rotation.y = currentRotation;[cite: 1, 2]
         }
@@ -684,14 +780,14 @@
             }
         });
 
-        if (currentActiveIndex === -1 && !isMobile) {
+        if (currentActiveIndex === -1) {[cite: 1, 2]
             raycaster.setFromCamera(mouse, camera);[cite: 1, 2]
             const intersects = raycaster.intersectObjects(cardMeshes);[cite: 1, 2]
             
             cardMeshes.forEach(mesh => {[cite: 1, 2]
                 if (mesh.uuid !== activeCardUUID) {[cite: 1, 2]
                     mesh.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);[cite: 1, 2]
-                    mesh.userData.targetOpacity = mesh.userData.baseOpacity; [cite: 1, 2]
+                    mesh.userData.targetOpacity = mesh.userData.baseOpacity;[cite: 1, 2] 
                 }
             });
             document.body.style.cursor = 'default';[cite: 1, 2]
@@ -715,7 +811,7 @@
         projects.forEach(p => {[cite: 1, 2]
             if (p.sceneObject && p.sceneObject.visible) {[cite: 1, 2]
                 p.sceneObject.rotation.y += 0.005;[cite: 1, 2]
-                p.sceneObject.position.y = MODEL_FIXED_Y; [cite: 1, 2]
+                p.sceneObject.position.y = MODEL_FIXED_Y;[cite: 1, 2] 
 
                 const currentS = p.sceneObject.scale.x;[cite: 1, 2]
                 const nextS = currentS + (centerModelTargetScale - currentS) * 0.05;[cite: 1, 2]
