@@ -6,7 +6,7 @@
     <title>Juby chiuuuuu studio <3 .</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&family=Inter:wght@900&display=swap" rel="stylesheet">
 
     <!-- Markdown 解析庫 -->
@@ -66,11 +66,11 @@
         body.panel-open #ui-layer { transform: translateY(-200px); opacity: 0; }
 
         #ui-title { 
-            font-size: 4.5rem; font-weight: 900; margin: 0; 
-            line-height: 0.95; text-transform: uppercase; word-break: break-word; 
+            font-size: 5.5rem; font-weight: 900; margin: 0; 
+            line-height: 0.85; text-transform: uppercase; word-break: break-word; 
         }
         #ui-subtitle {
-            font-size: 1.2rem; font-weight: 700; margin: 8px 0 0 0;
+            font-size: 1.2rem; font-weight: 700; margin: 5px 0 0 0;
             padding-left: 12px; border-left: 4px solid #ffffff; line-height: 1.2;
         }
 
@@ -184,18 +184,18 @@
     import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
     const RADIUS = 20;            
-    const MODEL_FIXED_Y = 1.3;[cite: 1, 2]     
+    const MODEL_FIXED_Y = 1.3;[cite: 1, 2]      
     const CARD_COUNT = 25;        
     const SPACE_COLOR = '#6c5b5e';[cite: 1, 2]
 
     let scene, camera, renderer;
     let carouselGroup, centerModelGroup, cardMeshes = [], projects = [];
     let targetRotation = 0, currentRotation = 0, currentActiveIndex = -1, activeCardUUID = null, previewIndex = 0;
-    let centerModelTargetScale = 1.5;
+    let centerModelTargetScale = 2.0;[cite: 1, 2]
 
     let isMobile = window.innerWidth / window.innerHeight < 1;
     let CAMERA_BASE_Y = isMobile ? 30 : 22;
-    let CAMERA_BASE_Z = isMobile ? 115 : 75;
+    let CAMERA_BASE_Z = isMobile ? 115 : 75; // 手機版拉遠 Z 軸，完整容納圓環
 
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
@@ -233,7 +233,7 @@
         setupLightsAndFloor();[cite: 1, 2]
 
         if (projects.length > 0) {[cite: 1, 2]
-            await preloadAllModels();
+            await preloadAllModels();[cite: 1, 2]
             switchPreviewModel(0);[cite: 1, 2]
         }
 
@@ -244,6 +244,7 @@
         window.addEventListener('mousemove', onMouseMove);[cite: 1, 2]
         window.addEventListener('click', onClick);[cite: 1, 2]
 
+        // 嚴謹分流：點擊 vs 滑動
         window.addEventListener('touchstart', (e) => { 
             if (currentActiveIndex !== -1) return;
             isDragging = true; 
@@ -266,6 +267,7 @@
         window.addEventListener('touchend', (e) => { 
             if (currentActiveIndex !== -1) return;
             isDragging = false; 
+            // 若手指移動距離極小，判定為點擊
             if (!hasMoved) {
                 const touch = e.changedTouches[0];
                 handleRaycast(touch.clientX, touch.clientY);
@@ -273,13 +275,8 @@
         });
 
         setupUIEvents();
-
-        // 💡 修正關鍵：正確移除 loaderDiv，徹底告別卡在 INITIALIZING
-        const loaderDiv = document.getElementById('loader');
-        if (loaderDiv) {
-            loaderDiv.style.opacity = 0;
-            setTimeout(() => loaderDiv.remove(), 500);
-        }
+        document.getElementById('loader').style.opacity = 0;[cite: 1, 2]
+        setTimeout(() => document.getElementById('loader').remove(), 500);
 
         animate();[cite: 1, 2]
     }
@@ -318,7 +315,7 @@
         const floorGeo = new THREE.PlaneGeometry(1000, 1000);[cite: 1, 2]
         const floorMat = new THREE.MeshStandardMaterial({ 
             color: new THREE.Color(SPACE_COLOR),[cite: 1, 2]
-            roughness: 1.0,[cite: 1, 2]
+            roughness: 1.0, [cite: 1, 2]
             metalness: 0.0[cite: 1, 2]
         });
         const floor = new THREE.Mesh(floorGeo, floorMat);[cite: 1, 2]
@@ -341,26 +338,12 @@
 
             projects = await Promise.all(items.map(async (name, index) => {
                 let desc = "";
-                let customTitle = "";
-                let customSubtitle = "";
+                let customTitle = name.toUpperCase();[cite: 1, 2]
                 
-                // 💡 在這裡修改大標題與副標題
-                if (name === 'a') {
-                    customTitle = "JUBY 2014";
-                    customSubtitle = "COLLECTION 2014";
-                } else if (name === 'b') {
-                    customTitle = "JUBY FALL";
-                    customSubtitle = "AUTUMN WINTER";
-                } else if (name === 'c') {
-                    customTitle = "JUBY DANCE";
-                    customSubtitle = "STAGE PERFORMANCE";
-                } else if (name === 'd') {
-                    customTitle = "JUBY STUDIO";
-                    customSubtitle = "CREATIVE SPACE";
-                } else if (name === 'e') {
-                    customTitle = "EXPERIMENTAL";
-                    customSubtitle = "3D ARTWORK";
-                }
+                if (name === 'a') customTitle = "JUBY 2014"; 
+                if (name === 'b') customTitle = "JUBY FALL"; 
+                if (name === 'c') customTitle = "JUBY DANCE"; 
+                if (name === 'd') customTitle = "JUBY STUDIO"; 
 
                 try {
                     let r = await fetch(`txts/${name}.md?t=${nocache}`);
@@ -370,8 +353,8 @@
 
                 return {
                     id: index,
+                    letter: name.toUpperCase(),[cite: 1, 2]
                     title: customTitle, 
-                    subtitle: customSubtitle,
                     image: `images/${name}.png?t=${nocache}`, 
                     model: `models/${name}.glb`, 
                     desc: desc,
@@ -419,17 +402,16 @@
                     const size = new THREE.Vector3();[cite: 1, 2]
                     box.getSize(size);[cite: 1, 2]
                     const maxDim = Math.max(size.x, size.y, size.z);[cite: 1, 2]
-                    project.normalizedScale = 3.0 / maxDim;
+                    project.normalizedScale = 4.0 / maxDim;[cite: 1, 2]
 
                     model.visible = false;[cite: 1, 2]
                     centerModelGroup.add(model);[cite: 1, 2]
                     project.sceneObject = model;[cite: 1, 2]
 
                     loaded++;[cite: 1, 2]
-                    const pFill = document.getElementById('progress-fill');
-                    if (pFill) pFill.style.width = Math.round((loaded / total) * 100) + "%";[cite: 1, 2]
-                    resolve();
-                }, undefined, () => resolve()); // 錯誤時強制 resolve 防止死鎖
+                    document.getElementById('progress-fill').style.width = Math.round((loaded / total) * 100) + "%";[cite: 1, 2]
+                    resolve();[cite: 1, 2]
+                }, undefined, () => resolve());[cite: 1, 2]
             });
         });
 
@@ -456,8 +438,8 @@
                 color: 0x999999,[cite: 1, 2]
                 side: THREE.DoubleSide,[cite: 1, 2]
                 transparent: true,      [cite: 1, 2]
-                opacity: 0.7,         [cite: 1, 2]
-                roughness: 0.4,       [cite: 1, 2]
+                opacity: 0.7,          [cite: 1, 2]
+                roughness: 0.4,        [cite: 1, 2]
                 metalness: 0.2[cite: 1, 2]
             });
 
@@ -484,10 +466,10 @@
                 project: project,[cite: 1, 2]
                 dataIndex: dataIndex,[cite: 1, 2]
                 originalAngle: angle,[cite: 1, 2]
-                targetLocalY: 0, [cite: 1, 2]
-                currentLocalY: 0,[cite: 1, 2]
-                targetOpacity: 0.7,[cite: 1, 2]
-                baseOpacity: 0.7    [cite: 1, 2]
+                targetLocalY: 0,  [cite: 1, 2]
+                currentLocalY: 0, [cite: 1, 2]
+                targetOpacity: 0.7, [cite: 1, 2]
+                baseOpacity: 0.7     [cite: 1, 2]
             };
             carouselGroup.add(mesh);[cite: 1, 2]
             cardMeshes.push(mesh);[cite: 1, 2]
@@ -496,7 +478,7 @@
 
     function switchPreviewModel(dataIndex) {
         previewIndex = dataIndex;[cite: 1, 2]
-        updateUIText(dataIndex);
+        updateUIText(dataIndex);[cite: 1, 2]
         
         projects.forEach((p, idx) => {[cite: 1, 2]
             if (p.sceneObject) {[cite: 1, 2]
@@ -513,10 +495,10 @@
     }
 
     function updateUIText(dataIndex) {
-        const p = projects[dataIndex];
-        if(!p) return;
-        document.getElementById('ui-title').innerText = p.title || "";
-        document.getElementById('ui-subtitle').innerText = p.subtitle || "";
+        const p = projects[dataIndex];[cite: 1, 2]
+        if(!p) return;[cite: 1, 2]
+        document.getElementById('ui-title').innerText = p.letter || "";[cite: 1, 2]
+        document.getElementById('ui-subtitle').innerText = p.title || "";[cite: 1, 2]
     }
 
     function handleRaycast(clientX, clientY) {
@@ -552,13 +534,14 @@
         
         const p = projects[dataIndex];[cite: 1, 2]
         document.getElementById('detail-panel-title').innerText = p.title;[cite: 1, 2]
+        
         document.getElementById('detail-desc').innerHTML = typeof marked !== 'undefined' ? marked.parse(p.desc) : p.desc;
         
         const panel = document.getElementById('glass-panel');[cite: 1, 2]
         panel.classList.add('full-open');
         document.body.classList.add('panel-open');[cite: 1, 2]
 
-        centerModelTargetScale = p.normalizedScale * 2.2;
+        centerModelTargetScale = p.normalizedScale * 2.5;[cite: 1, 2]
         activeCardUUID = cardMesh.uuid;[cite: 1, 2]
         cardMesh.userData.targetLocalY = 50;[cite: 1, 2]
         cardMesh.userData.targetOpacity = 0;[cite: 1, 2]
@@ -649,7 +632,7 @@
     }
 
     function onMouseMove(event) {
-        if (isMobile) return;
+        if (isMobile) return; // 手機版完全凍結視角位移，防止偏斜
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;[cite: 1, 2]
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;[cite: 1, 2]
         
@@ -665,7 +648,7 @@
     function animate() {
         requestAnimationFrame(animate);[cite: 1, 2]
 
-        const time = Date.now() * 0.0002;[cite: 1, 2]
+        const time = Date.now() * 0.0002; [cite: 1, 2]
         if (lights.length === 4) {[cite: 1, 2]
             lights[0].position.x = Math.sin(time) * 25;[cite: 1, 2]
             lights[0].position.z = Math.cos(time) * 25;[cite: 1, 2]
@@ -708,7 +691,7 @@
             cardMeshes.forEach(mesh => {[cite: 1, 2]
                 if (mesh.uuid !== activeCardUUID) {[cite: 1, 2]
                     mesh.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);[cite: 1, 2]
-                    mesh.userData.targetOpacity = mesh.userData.baseOpacity;[cite: 1, 2]
+                    mesh.userData.targetOpacity = mesh.userData.baseOpacity; [cite: 1, 2]
                 }
             });
             document.body.style.cursor = 'default';[cite: 1, 2]
@@ -732,7 +715,7 @@
         projects.forEach(p => {[cite: 1, 2]
             if (p.sceneObject && p.sceneObject.visible) {[cite: 1, 2]
                 p.sceneObject.rotation.y += 0.005;[cite: 1, 2]
-                p.sceneObject.position.y = MODEL_FIXED_Y;[cite: 1, 2]
+                p.sceneObject.position.y = MODEL_FIXED_Y; [cite: 1, 2]
 
                 const currentS = p.sceneObject.scale.x;[cite: 1, 2]
                 const nextS = currentS + (centerModelTargetScale - currentS) * 0.05;[cite: 1, 2]
