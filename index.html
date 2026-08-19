@@ -6,7 +6,7 @@
     <title>Juby chiuuuuu studio <3 .</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&family=Inter:wght@900&display=swap" rel="stylesheet">
 
     <!-- Markdown 解析庫 -->
@@ -66,11 +66,11 @@
         body.panel-open #ui-layer { transform: translateY(-200px); opacity: 0; }
 
         #ui-title { 
-            font-size: 5.5rem; font-weight: 900; margin: 0; 
-            line-height: 0.85; text-transform: uppercase; word-break: break-word; 
+            font-size: 4.5rem; font-weight: 900; margin: 0; 
+            line-height: 0.95; text-transform: uppercase; word-break: break-word; 
         }
         #ui-subtitle {
-            font-size: 1.2rem; font-weight: 700; margin: 5px 0 0 0;
+            font-size: 1.2rem; font-weight: 700; margin: 8px 0 0 0;
             padding-left: 12px; border-left: 4px solid #ffffff; line-height: 1.2;
         }
 
@@ -87,7 +87,7 @@
         }
         #glass-panel.full-open { 
             transform: translateY(0%); 
-            background: rgba(42, 32, 34, 0.9); 
+            background: rgba(42, 32, 34, 0.92); 
             pointer-events: auto;
         }
 
@@ -128,7 +128,7 @@
             #brand { top: 20px; left: 20px; font-size: 1rem; }
             #audio-toggle { top: 15px; right: 20px; width: 40px; height: 40px; }
             #ui-layer { left: 20px; bottom: 10%; width: calc(100% - 40px); }
-            #ui-title { font-size: 3.2rem; }
+            #ui-title { font-size: 3rem; }
             .panel-content { padding: 0 20px 60px 20px; }
             .panel-title-text { font-size: 2.2rem; }
         }
@@ -184,18 +184,18 @@
     import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
     const RADIUS = 20;            
-    const MODEL_FIXED_Y = 1.3;[cite: 1, 2]      
+    const MODEL_FIXED_Y = 1.3;[cite: 1, 2]     
     const CARD_COUNT = 25;        
     const SPACE_COLOR = '#6c5b5e';[cite: 1, 2]
 
     let scene, camera, renderer;
     let carouselGroup, centerModelGroup, cardMeshes = [], projects = [];
     let targetRotation = 0, currentRotation = 0, currentActiveIndex = -1, activeCardUUID = null, previewIndex = 0;
-    let centerModelTargetScale = 2.0;[cite: 1, 2]
+    let centerModelTargetScale = 1.5; // 💡 預設比例調為精緻小巧尺寸
 
     let isMobile = window.innerWidth / window.innerHeight < 1;
-    let CAMERA_BASE_Y = isMobile ? 30 : 22;
-    let CAMERA_BASE_Z = isMobile ? 115 : 75; // 手機版拉遠 Z 軸，完整容納圓環
+    let CAMERA_BASE_Y = isMobile ? 28 : 22;
+    let CAMERA_BASE_Z = isMobile ? 110 : 75;
 
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
@@ -215,7 +215,7 @@
 
         camera = new THREE.PerspectiveCamera(isMobile ? 48 : 35, window.innerWidth / window.innerHeight, 0.1, 400);
         camera.position.set(0, CAMERA_BASE_Y, CAMERA_BASE_Z); 
-        camera.lookAt(0, isMobile ? 4 : 0, 0);
+        camera.lookAt(0, isMobile ? 3 : 0, 0);
         
         camera.layers.enable(0);[cite: 1, 2]
         camera.layers.enable(1);[cite: 1, 2]
@@ -233,7 +233,7 @@
         setupLightsAndFloor();[cite: 1, 2]
 
         if (projects.length > 0) {[cite: 1, 2]
-            await preloadAllModels();[cite: 1, 2]
+            await preloadAllModels();
             switchPreviewModel(0);[cite: 1, 2]
         }
 
@@ -244,7 +244,6 @@
         window.addEventListener('mousemove', onMouseMove);[cite: 1, 2]
         window.addEventListener('click', onClick);[cite: 1, 2]
 
-        // 嚴謹分流：點擊 vs 滑動
         window.addEventListener('touchstart', (e) => { 
             if (currentActiveIndex !== -1) return;
             isDragging = true; 
@@ -267,7 +266,6 @@
         window.addEventListener('touchend', (e) => { 
             if (currentActiveIndex !== -1) return;
             isDragging = false; 
-            // 若手指移動距離極小，判定為點擊
             if (!hasMoved) {
                 const touch = e.changedTouches[0];
                 handleRaycast(touch.clientX, touch.clientY);
@@ -275,8 +273,13 @@
         });
 
         setupUIEvents();
-        document.getElementById('loader').style.opacity = 0;[cite: 1, 2]
-        setTimeout(() => document.getElementById('loader').remove(), 500);
+
+        // 💡 移除 Loader 並加入防禦性保險
+        const loaderDiv = document.getElementById('loader');
+        if (loaderDiv) {
+            loaderDiv.style.opacity = 0;
+            setTimeout(() => loaderDiv.remove(), 500);
+        }
 
         animate();[cite: 1, 2]
     }
@@ -334,16 +337,32 @@
         status.innerText = "FETCHING DATA...";[cite: 1, 2]
         try {
             const nocache = new Date().getTime();[cite: 1, 2]
+            
+            // 💡 1. 在此定義你擁有的作品資料夾代號
             const items = ['a', 'b', 'c', 'd', 'e']; 
 
             projects = await Promise.all(items.map(async (name, index) => {
                 let desc = "";
-                let customTitle = name.toUpperCase();[cite: 1, 2]
+                let customTitle = "";
+                let customSubtitle = "";
                 
-                if (name === 'a') customTitle = "篝火"; 
-                if (name === 'b') customTitle = "千年不惑"; 
-                if (name === 'c') customTitle = "2023 聲響 逆斷口"; 
-                if (name === 'd') customTitle = "JUBY STUDIO"; 
+                // 💡 2. 在此修改每個作品的「主標題」與「副標題」
+                if (name === 'a') {
+                    customTitle = "篝火";
+                    customSubtitle = "篝火";
+                } else if (name === 'b') {
+                    customTitle = "千年不惑";
+                    customSubtitle = "千年不惑";
+                } else if (name === 'c') {
+                    customTitle = "JUBY DANCE";
+                    customSubtitle = "STAGE PERFORMANCE";
+                } else if (name === 'd') {
+                    customTitle = "JUBY STUDIO";
+                    customSubtitle = "CREATIVE SPACE";
+                } else if (name === 'e') {
+                    customTitle = "EXPERIMENTAL";
+                    customSubtitle = "3D ARTWORK";
+                }
 
                 try {
                     let r = await fetch(`txts/${name}.md?t=${nocache}`);
@@ -353,8 +372,8 @@
 
                 return {
                     id: index,
-                    letter: name.toUpperCase(),[cite: 1, 2]
                     title: customTitle, 
+                    subtitle: customSubtitle,
                     image: `images/${name}.png?t=${nocache}`, 
                     model: `models/${name}.glb`, 
                     desc: desc,
@@ -373,9 +392,11 @@
 
         const total = projects.length;[cite: 1, 2]
         let loaded = 0;[cite: 1, 2]
-        document.getElementById('loader-text').innerText = "LOADING MODELS...";[cite: 1, 2]
 
-        const promises = projects.map((project) => {
+        // 3秒超時保險：即使模型 404 也強制開門
+        const timeoutPromise = new Promise(resolve => setTimeout(resolve, 3000));
+
+        const loadPromises = projects.map((project) => {
             return new Promise((resolve) => {
                 loader.load(project.model, (gltf) => {
                     const model = gltf.scene;[cite: 1, 2]
@@ -402,20 +423,23 @@
                     const size = new THREE.Vector3();[cite: 1, 2]
                     box.getSize(size);[cite: 1, 2]
                     const maxDim = Math.max(size.x, size.y, size.z);[cite: 1, 2]
-                    project.normalizedScale = 4.0 / maxDim;[cite: 1, 2]
+                    
+                    // 💡 模型尺寸預設調小，維持精緻感
+                    project.normalizedScale = 2.5 / maxDim;
 
                     model.visible = false;[cite: 1, 2]
                     centerModelGroup.add(model);[cite: 1, 2]
                     project.sceneObject = model;[cite: 1, 2]
 
                     loaded++;[cite: 1, 2]
-                    document.getElementById('progress-fill').style.width = Math.round((loaded / total) * 100) + "%";[cite: 1, 2]
-                    resolve();[cite: 1, 2]
-                }, undefined, () => resolve());[cite: 1, 2]
+                    const progressEl = document.getElementById('progress-fill');
+                    if (progressEl) progressEl.style.width = Math.round((loaded / total) * 100) + "%";
+                    resolve();
+                }, undefined, () => resolve()); // 遇錯強制 resolve，不卡死
             });
         });
 
-        await Promise.all(promises);[cite: 1, 2]
+        await Promise.race([Promise.all(loadPromises), timeoutPromise]);
         renderer.compile(scene, camera);[cite: 1, 2]
     }
 
@@ -437,7 +461,7 @@
             const material = new THREE.MeshStandardMaterial({ 
                 color: 0x999999,[cite: 1, 2]
                 side: THREE.DoubleSide,[cite: 1, 2]
-                transparent: true,      [cite: 1, 2]
+                transparent: true,       [cite: 1, 2]
                 opacity: 0.7,          [cite: 1, 2]
                 roughness: 0.4,        [cite: 1, 2]
                 metalness: 0.2[cite: 1, 2]
@@ -452,7 +476,7 @@
                     material.needsUpdate = true;[cite: 1, 2]
                 },
                 undefined,[cite: 1, 2]
-                (err) => {}[cite: 1, 2]
+                () => {}
             );
 
             const mesh = new THREE.Mesh(geometry, material);[cite: 1, 2]
@@ -469,7 +493,7 @@
                 targetLocalY: 0,  [cite: 1, 2]
                 currentLocalY: 0, [cite: 1, 2]
                 targetOpacity: 0.7, [cite: 1, 2]
-                baseOpacity: 0.7     [cite: 1, 2]
+                baseOpacity: 0.7    [cite: 1, 2]
             };
             carouselGroup.add(mesh);[cite: 1, 2]
             cardMeshes.push(mesh);[cite: 1, 2]
@@ -478,7 +502,7 @@
 
     function switchPreviewModel(dataIndex) {
         previewIndex = dataIndex;[cite: 1, 2]
-        updateUIText(dataIndex);[cite: 1, 2]
+        updateUIText(dataIndex);
         
         projects.forEach((p, idx) => {[cite: 1, 2]
             if (p.sceneObject) {[cite: 1, 2]
@@ -487,7 +511,7 @@
                     p.sceneObject.rotation.y = 0;[cite: 1, 2]
                     p.sceneObject.position.y = MODEL_FIXED_Y;[cite: 1, 2]
                     if (currentActiveIndex === -1) {[cite: 1, 2]
-                        centerModelTargetScale = p.normalizedScale * (isMobile ? 1.5 : 2.0);
+                        centerModelTargetScale = p.normalizedScale * 1.5;
                     }
                 }
             }
@@ -495,10 +519,11 @@
     }
 
     function updateUIText(dataIndex) {
-        const p = projects[dataIndex];[cite: 1, 2]
-        if(!p) return;[cite: 1, 2]
-        document.getElementById('ui-title').innerText = p.letter || "";[cite: 1, 2]
-        document.getElementById('ui-subtitle').innerText = p.title || "";[cite: 1, 2]
+        const p = projects[dataIndex];
+        if(!p) return;
+        // 💡 直接顯示設定好的標題與副標題
+        document.getElementById('ui-title').innerText = p.title || "";
+        document.getElementById('ui-subtitle').innerText = p.subtitle || "";
     }
 
     function handleRaycast(clientX, clientY) {
@@ -541,7 +566,7 @@
         panel.classList.add('full-open');
         document.body.classList.add('panel-open');[cite: 1, 2]
 
-        centerModelTargetScale = p.normalizedScale * 2.5;[cite: 1, 2]
+        centerModelTargetScale = p.normalizedScale * 2.0; 
         activeCardUUID = cardMesh.uuid;[cite: 1, 2]
         cardMesh.userData.targetLocalY = 50;[cite: 1, 2]
         cardMesh.userData.targetOpacity = 0;[cite: 1, 2]
@@ -553,7 +578,7 @@
         document.body.classList.remove('panel-open');[cite: 1, 2]
         
         const p = projects[previewIndex];[cite: 1, 2]
-        if(p) centerModelTargetScale = p.normalizedScale * (isMobile ? 1.5 : 2.0); 
+        if(p) centerModelTargetScale = p.normalizedScale * 1.5; 
         
         if (activeCardUUID) {[cite: 1, 2]
             const mesh = cardMeshes.find(m => m.uuid === activeCardUUID);[cite: 1, 2]
@@ -598,7 +623,7 @@
         let isPlaying = false;[cite: 1, 2]
 
         audioBtn.addEventListener('click', (e) => {[cite: 1, 2]
-            e.stopPropagation(); [cite: 1, 2]
+            e.stopPropagation();  [cite: 1, 2]
             if (isPlaying) {[cite: 1, 2]
                 bgMusic.pause();[cite: 1, 2]
                 iconOn.style.display = 'none';[cite: 1, 2]
@@ -614,13 +639,13 @@
 
     function onWindowResize() {
         isMobile = window.innerWidth / window.innerHeight < 1;
-        CAMERA_BASE_Y = isMobile ? 30 : 22;
-        CAMERA_BASE_Z = isMobile ? 115 : 75;
+        CAMERA_BASE_Y = isMobile ? 28 : 22;
+        CAMERA_BASE_Z = isMobile ? 110 : 75;
         
         camera.fov = isMobile ? 48 : 35;
         camera.aspect = window.innerWidth / window.innerHeight;[cite: 1, 2]
         camera.position.set(0, CAMERA_BASE_Y, CAMERA_BASE_Z);
-        camera.lookAt(0, isMobile ? 4 : 0, 0);
+        camera.lookAt(0, isMobile ? 3 : 0, 0);
         camera.updateProjectionMatrix();[cite: 1, 2]
         renderer.setSize(window.innerWidth, window.innerHeight);[cite: 1, 2]
     }
@@ -632,12 +657,12 @@
     }
 
     function onMouseMove(event) {
-        if (isMobile) return; // 手機版完全凍結視角位移，防止偏斜
+        if (isMobile) return;
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;[cite: 1, 2]
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;[cite: 1, 2]
         
         if (!isDragging && currentActiveIndex === -1) {[cite: 1, 2]
-            const targetCamX = -mouse.x * 4; [cite: 1, 2]
+            const targetCamX = -mouse.x * 4;  [cite: 1, 2]
             const targetCamY = mouse.y * 4 + CAMERA_BASE_Y;[cite: 1, 2]
             camera.position.x += (targetCamX - camera.position.x) * 0.05;[cite: 1, 2]
             camera.position.y += (targetCamY - camera.position.y) * 0.05;[cite: 1, 2]
