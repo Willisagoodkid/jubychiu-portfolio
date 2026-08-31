@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Juby chiuuuuu studio &lt;3 .</title>
-    
+    <meta name="description" content="Juby Chiu 作品集 — 舞台服裝設計與跨領域藝術創作。">
+    <meta property="og:title" content="Juby chiuuuuu studio <3 .">
+    <meta property="og:description" content="Juby Chiu 作品集 — 舞台服裝設計與跨領域藝術創作。">
+    <meta property="og:type" content="website">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&family=Inter:wght@900&display=swap" rel="stylesheet">
@@ -177,7 +181,7 @@
 </head>
 <body>
 
-    <audio id="bg-music" loop preload="auto"><source src="music.mp3" type="audio/mpeg"></audio>
+    <audio id="bg-music" loop preload="none"><source src="music.mp3" type="audio/mpeg"></audio>
 
     <div id="loader">
         <div id="loader-text">INITIALIZING...</div>
@@ -212,9 +216,13 @@
     import * as THREE from 'three';
     import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-    const RADIUS = 20;            
-    const CARD_COUNT = 24; 
+    const RADIUS = 20;
+    const CARD_COUNT = 24;
     const SPACE_COLOR = '#6c5b5e';
+    // 手動版本號：更新素材時才需要調整，讓瀏覽器平常可以正常快取圖片/文字
+    const ASSET_VERSION = 'v1';
+    // 各作品主圖實際副檔名，優先嘗試以避免多一次 404 請求
+    const EXT_HINT = { a: 'jpg', b: 'jpg', c: 'jpg', d: 'jpg', e: 'jpg', f: 'jpg' };
 
     let scene, camera, renderer;
     let carouselGroup, cardMeshes = [], projects = [];
@@ -299,6 +307,7 @@
             const moveDist = Math.hypot(touchEndX - touchStartX, touchEndY - touchStartY);
 
             if (touchEndTime - touchStartTime < 350 && moveDist < 12) {
+                e.preventDefault(); // 避免瀏覽器隨後補發的合成 click 事件重複觸發/誤關面板
                 performRaycast(touchEndX, touchEndY);
             }
         });
@@ -359,54 +368,36 @@
         scene.add(floor);
     }
 
-    // 自動支援 PNG 與 JPG (優先尋找 .png，失敗自動嘗試 .jpg 與 .jpeg)
-    function loadTextureWithFallback(name, nocache) {
-        return new Promise((resolve) => {
-            const pngUrl = `images/${name}.png?t=${nocache}`;
-            const jpgUrl = `images/${name}.jpg?t=${nocache}`;
-            const jpegUrl = `images/${name}.jpeg?t=${nocache}`;
+    // 依副檔名提示優先嘗試，失敗才嘗試其餘副檔名，減少不必要的 404 請求
+    function loadTextureWithFallback(name, version) {
+        const allExts = ['png', 'jpg', 'jpeg'];
+        const hint = EXT_HINT[name];
+        const exts = hint ? [hint, ...allExts.filter(e => e !== hint)] : allExts;
 
-            textureLoader.load(
-                pngUrl,
-                (texture) => {
-                    texture.colorSpace = THREE.SRGBColorSpace;
-                    resolve(texture);
-                },
-                undefined,
-                () => {
-                    textureLoader.load(
-                        jpgUrl,
-                        (texture) => {
-                            texture.colorSpace = THREE.SRGBColorSpace;
-                            resolve(texture);
-                        },
-                        undefined,
-                        () => {
-                            textureLoader.load(
-                                jpegUrl,
-                                (texture) => {
-                                    texture.colorSpace = THREE.SRGBColorSpace;
-                                    resolve(texture);
-                                },
-                                undefined,
-                                () => resolve(null)
-                            );
-                        }
-                    );
-                }
-            );
+        return new Promise((resolve) => {
+            const tryLoad = (i) => {
+                if (i >= exts.length) { resolve(null); return; }
+                textureLoader.load(
+                    `images/${name}.${exts[i]}?v=${version}`,
+                    (texture) => {
+                        texture.colorSpace = THREE.SRGBColorSpace;
+                        resolve(texture);
+                    },
+                    undefined,
+                    () => tryLoad(i + 1)
+                );
+            };
+            tryLoad(0);
         });
     }
 
     async function fetchData() {
-        const nocache = new Date().getTime();
-        const items = ['a', 'b', 'c', 'd', 'e', 'f']; 
+        const items = ['a', 'b', 'c', 'd', 'e', 'f'];
 
         projects = await Promise.all(items.map(async (name, index) => {
-            let desc = "";
             let customTitle = "";
             let customSubtitle = "";
-            
+
             if (name === 'a') {
                 customTitle = "篝火";
                 customSubtitle = "-篝火-";
@@ -427,16 +418,16 @@
                 customSubtitle = "wannasleep 李奕賢";
             }
 
-            try {
-                const r = await fetch(`txts/${name}.txt?t=${nocache}`);
-                if(r.ok) desc = await r.text();
-            } catch(e){}
-
-            const texture = await loadTextureWithFallback(name, nocache);
+            const [desc, texture] = await Promise.all([
+                fetch(`txts/${name}.txt?v=${ASSET_VERSION}`)
+                    .then(r => r.ok ? r.text() : "")
+                    .catch(() => ""),
+                loadTextureWithFallback(name, ASSET_VERSION)
+            ]);
 
             return {
                 id: index,
-                title: customTitle, 
+                title: customTitle,
                 subtitle: customSubtitle,
                 texture: texture,
                 desc: desc
