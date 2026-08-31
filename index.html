@@ -218,7 +218,24 @@
 
     const RADIUS = 20;
     const CARD_COUNT = 24;
-    const SPACE_COLOR = '#6c5b5e';
+    // 三組配色輪：點標題重整時依序切換，繞一圈回到暮色
+    const THEMES = [
+        { name: '暮色', space: '#6c5b5e', lights: [0xffd54f, 0xc084fc, 0xff8a65, 0xf472b6] },
+        { name: '淺藍', space: '#5b6b74', lights: [0x64b5f6, 0x4dd0e1, 0x9575cd, 0x81d4fa] },
+        { name: '淺綠', space: '#5c6c5a', lights: [0xaed581, 0x4db6ac, 0xdce775, 0x80cbc4] }
+    ];
+    const THEME_KEY = 'jubyThemeIndex';
+    function getThemeIndex() {
+        try {
+            const v = parseInt(localStorage.getItem(THEME_KEY), 10);
+            return Number.isInteger(v) && v >= 0 && v < THEMES.length ? v : 0;
+        } catch (e) { return 0; }
+    }
+    const activeTheme = THEMES[getThemeIndex()];
+    const SPACE_COLOR = activeTheme.space;
+    document.body.style.backgroundColor = SPACE_COLOR;
+    const loaderEl = document.getElementById('loader');
+    if (loaderEl) loaderEl.style.background = SPACE_COLOR;
     // 手動版本號：更新素材時才需要調整，讓瀏覽器平常可以正常快取圖片/文字
     const ASSET_VERSION = 'v1';
     // 各作品主圖實際副檔名，優先嘗試以避免多一次 404 請求
@@ -346,8 +363,8 @@
         topLight.shadow.blurSamples = 10;
         scene.add(topLight);
 
-        const colors = [0xffd54f, 0xc084fc, 0xff8a65, 0xf472b6]; 
-        const intensities = isMobile ? [5000, 5000, 3600, 3600] : [2500, 2500, 1800, 1800]; 
+        const colors = activeTheme.lights;
+        const intensities = isMobile ? [5000, 5000, 3600, 3600] : [2500, 2500, 1800, 1800];
         
         for(let i = 0; i < 4; i++) {
             const light = new THREE.PointLight(colors[i], intensities[i], 200);
@@ -595,6 +612,10 @@
         const triggerReload = (e) => {
             e.preventDefault();
             e.stopPropagation();
+            try {
+                const next = (getThemeIndex() + 1) % THEMES.length;
+                localStorage.setItem(THEME_KEY, String(next));
+            } catch (err) {}
             window.location.replace(window.location.pathname + '?r=' + Date.now());
         };
         brandEl.addEventListener('click', triggerReload);
